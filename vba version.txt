@@ -1,0 +1,66 @@
+Option Explicit
+
+Private Sub UserForm_Initialize()
+    ' Set up the Delta drop-down menu
+    DeltaComboBox.AddItem "5 delta"
+    DeltaComboBox.AddItem "15 delta"
+    DeltaComboBox.AddItem "30 delta"
+    
+    ' Set up the Data Type drop-down menu
+    DataTypeComboBox.AddItem "Jan"
+    DataTypeComboBox.AddItem "Feb"
+    ' Add the rest of the months
+    
+    DataTypeComboBox.AddItem "Spring"
+    DataTypeComboBox.AddItem "Summer"
+    DataTypeComboBox.AddItem "Autumn"
+    DataTypeComboBox.AddItem "Winter"
+    
+    DataTypeComboBox.AddItem "1"
+    DataTypeComboBox.AddItem "2"
+    DataTypeComboBox.AddItem "3"
+    
+    ' Set the default values
+    DeltaComboBox.Value = "5 delta"
+    DataTypeComboBox.Value = "Jan"
+End Sub
+
+Private Sub GoButton_Click()
+    Dim selectedDelta As String
+    Dim selectedDataType As String
+    
+    selectedDelta = DeltaComboBox.Value
+    selectedDataType = DataTypeComboBox.Value
+    
+    If selectedDelta <> "" And selectedDataType <> "" Then
+        MsgBox "Selected Delta: " & selectedDelta & vbCrLf & "Selected Data Type: " & selectedDataType, vbInformation
+        Unload Me ' Close the user form
+    Else
+        MsgBox "Please select options from both drop-down menus.", vbExclamation
+    End If
+End Sub
+
+
+Open Microsoft Excel.
+Press Alt + F11 to open the Visual Basic Editor.
+In the Visual Basic Editor, click on Insert in the top menu and select UserForm to insert a new user form.
+Double-click on the user form to open its code window.
+Copy and paste the provided VBA code into the code window of the user form.
+Close the Visual Basic Editor.
+Right-click on the workbook's name in the Project Explorer (usually located on the left side of the Excel window) and select Insert and then Module.
+In the module's code window, enter the following code to show the user form:
+Sub ShowUserForm()
+    UserForm1.Show
+End Sub
+
+Close the module code window.
+Press Alt + F8 to open the Macro dialog box.
+Select the ShowUserForm macro and click on the Run button.
+The user form with the drop-down menus and the "Go" button should now appear on the screen.
+You can then interact with the user form, select options from the drop-down menus, and click the "Go" button to trigger the desired actions based on the selected options.
+
+Note: Make sure to adjust the code according to the names of the controls on your user form. In the provided example, the user form is named UserForm1, and the drop-down menus and the button have the names DeltaComboBox, DataTypeComboBox, and GoButton, respectively.
+
+
+
+
