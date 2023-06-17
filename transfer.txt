@@ -1,0 +1,25 @@
+Sub IterateUntilColumnEmpty()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+
+    ' Set the worksheet where your data resides
+    Set ws = ThisWorkbook.Worksheets("Sheet1") ' Replace "Sheet1" with your sheet name
+
+    ' Find the last row in column C
+    lastRow = ws.Cells(ws.Rows.Count, "C").End(xlUp).Row
+
+    ' Iterate through the column until an empty cell is encountered
+    For i = 1 To lastRow
+        ' Check if the cell in column C is empty
+        If ws.Cells(i, "C").Value = "" Then
+            Exit For ' Exit the loop if an empty cell is encountered
+        End If
+        
+        ' Perform actions or operations here for each iteration
+        ' For example, you can access the cell value using ws.Cells(i, "C").Value
+        
+        ' Print the value of the cell in column C for demonstration
+        Debug.Print ws.Cells(i, "C").Value
+    Next i
+End Sub
