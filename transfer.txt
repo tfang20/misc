@@ -26,8 +26,8 @@ End Sub
 
 
 check if cell is empty:
-For Each cell In rng
-        If Not IsEmpty(cell) Then
-            Debug.Print cell.Value ' Prints the value of the non-empty cell in the Immediate window
-        End If
-    Next cell
+If myVariable <> "" Then
+        MsgBox "Variable is not empty."
+    Else
+        MsgBox "Variable is empty."
+    End If
