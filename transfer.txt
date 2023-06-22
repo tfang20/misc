@@ -15,6 +15,7 @@ Sub IterateUntilColumnEmpty()
         If ws.Cells(i, "C").Value = "" Then
             Exit For ' Exit the loop if an empty cell is encountered
         End If
+
         
         ' Perform actions or operations here for each iteration
         ' For example, you can access the cell value using ws.Cells(i, "C").Value
@@ -31,3 +32,22 @@ If myVariable <> "" Then
     Else
         MsgBox "Variable is empty."
     End If
+
+Sub CheckWorksheetExistence()
+    Dim ws As Worksheet
+    Dim wsName As String
+    
+    wsName = "test"
+    
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(wsName)
+    On Error GoTo 0
+    
+    If Not ws Is Nothing Then
+        MsgBox "Worksheet '" & wsName & "' exists."
+    Else
+        MsgBox "Worksheet '" & wsName & "' doesn't exist."
+    End If
+End Sub
+
+
