@@ -19,9 +19,10 @@ for patch, color in zip(boxplot['boxes'], colors):
 line1 = Line2D([0.75, 2.25], [2.5, 2.5], color='red', linestyle='dashed')
 line2 = Line2D([0.75, 2.25], [3.5, 3.5], color='green', linestyle='dashed')
 line3 = Line2D([0.75, 2.25], [3, 3], color='blue', linestyle='dashed')
+
 for box in boxplot['boxes']:
-    box_coords = box.get_bbox().get_points()
-    mid_x = (box_coords[0, 0] + box_coords[1, 0]) / 2
+    box_coords = box.get_path().vertices
+    mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
     ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [2.5, 2.5], color='red', linestyle='dashed'))
     ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3.5, 3.5], color='green', linestyle='dashed'))
     ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3, 3], color='blue', linestyle='dashed'))
