@@ -1,1 +1,30 @@
 in python, i want to draw a vertical boxplot. however this boxplot will be custom and does not follow typical conventions. for now, you can hardcode the values. i want the first boxplot to be called "atm". the y axis will be from range -5 to 5 in 0.1 increments. here is the customizations: instead of max, the top line should be hardcoded at 4.5. instead of minimum, the bottom line should be 1.5. instead of median, i want the middle line of the boxplot to be 3. instead of upper quartile, it should be 4. instead of lower quartile, it should be 2. basically, hard code these values (min, q1, median, q3, max) instead of it being the standard convetions of a boxplot so that i can create custom plots 
+import matplotlib.pyplot as plt
+
+# Custom values for the boxplot
+values = [1.5, 2, 3, 4, 4.5]
+
+# Creating the figure and axis
+fig, ax = plt.subplots()
+
+# Creating the boxplot
+boxplot = ax.boxplot([values], vert=False, widths=0.5, patch_artist=True)
+
+# Customizing the boxplot colors
+colors = ['lightblue']
+for patch, color in zip(boxplot['boxes'], colors):
+    patch.set_facecolor(color)
+
+# Setting the y-axis limits and ticks
+ax.set_ylim(-5, 5)
+ax.set_yticks([i / 10 for i in range(-50, 60, 10)])
+ax.set_yticklabels([str(i / 10) for i in range(-50, 60, 10)])
+
+# Setting the x-axis label
+ax.set_xlabel('Value')
+
+# Adding a title
+ax.set_title('Custom Boxplot')
+
+# Displaying the plot
+plt.show()
