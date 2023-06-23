@@ -112,3 +112,19 @@ ax.set_title('Custom Vertical Box Plots with Dashed Lines Inside Boxes')
 # Displaying the plot
 plt.show()
 
+
+for box in boxplot['boxes']:
+    # Get the vertices (coordinates) of the box
+    box_coords = box.get_path().vertices
+    
+    # Calculate the x-coordinate of the middle of the box
+    mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+    
+    # Add value label for the top line
+    ax.text(mid_x + 0.3, 4.5, '4.5', color='black', fontsize=8, verticalalignment='center')
+    
+    # Add value label for the bottom line
+    ax.text(mid_x + 0.3, 1.5, '1.5', color='black', fontsize=8, verticalalignment='center')
+
+
+
