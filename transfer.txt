@@ -11,7 +11,7 @@ fig, ax = plt.subplots()
 boxplot = ax.boxplot([values, values, values], vert=True, widths=0.5, patch_artist=True)
 
 # Customizing the boxplot colors
-colors = ['lightblue']
+colors = ['lightblue', 'lightblue', 'lightblue']
 for patch, color in zip(boxplot['boxes'], colors):
     patch.set_facecolor(color)
 
