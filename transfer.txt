@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 
-# Custom values for the boxplot
+# Custom values for the boxplots
 values = [1.5, 2, 3, 4, 4.5]
 
 # Creating the figure and axis
 fig, ax = plt.subplots()
 
-# Creating the boxplot
-boxplot = ax.boxplot([values], vert=True, widths=0.5, patch_artist=True)
+# Creating the boxplots
+boxplot = ax.boxplot([values, values, values], vert=True, widths=0.5, patch_artist=True)
 
 # Customizing the boxplot colors
 colors = ['lightblue']
@@ -20,10 +20,10 @@ ax.set_yticks([i / 10 for i in range(-50, 60, 10)])
 ax.set_yticklabels([str(i / 10) for i in range(-50, 60, 10)])
 
 # Setting the x-axis label
-ax.set_xlabel('boxplot1')
+ax.set_xlabel('Box Plots')
 
 # Adding a title
-ax.set_title('Custom Vertical Boxplot')
+ax.set_title('Custom Vertical Box Plots')
 
 # Displaying the plot
 plt.show()
