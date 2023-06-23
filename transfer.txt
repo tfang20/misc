@@ -15,11 +15,16 @@ colors = ['lightblue']
 for patch, color in zip(boxplot['boxes'], colors):
     patch.set_facecolor(color)
 
-# Adding dashed lines inside the boxes at 2.5 and 3.5
+# Adding dashed lines within each box at 2.5 and 3.5
 line1 = Line2D([0.75, 2.25], [2.5, 2.5], color='red', linestyle='dashed')
 line2 = Line2D([0.75, 2.25], [3.5, 3.5], color='green', linestyle='dashed')
-ax.add_line(line1)
-ax.add_line(line2)
+line3 = Line2D([0.75, 2.25], [3, 3], color='blue', linestyle='dashed')
+for box in boxplot['boxes']:
+    box_coords = box.get_bbox().get_points()
+    mid_x = (box_coords[0, 0] + box_coords[1, 0]) / 2
+    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [2.5, 2.5], color='red', linestyle='dashed'))
+    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3.5, 3.5], color='green', linestyle='dashed'))
+    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3, 3], color='blue', linestyle='dashed'))
 
 # Setting the y-axis limits and ticks
 ax.set_ylim(-5, 5)
@@ -30,7 +35,7 @@ ax.set_yticklabels([str(i / 10) for i in range(-50, 60, 10)])
 ax.set_xlabel('Box Plots')
 
 # Adding a title
-ax.set_title('Custom Vertical Box Plots with Dashed Lines Inside')
+ax.set_title('Custom Vertical Box Plots with Dashed Lines Inside Boxes')
 
 # Displaying the plot
 plt.show()
