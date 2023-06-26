@@ -129,5 +129,32 @@ for box in boxplot['boxes']:
 ##########################
 
 i have a sheet in excel that contains a table. the table starts at a10. i want to use vba to filter that table by a specific table value, such as "contract" in column C (header in c10, values in c11). show me the code for this, and utilize comments to explain 
+Sub FilterTableByValue()
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim filterValue As String
+    
+    ' Set the worksheet object
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your actual sheet name
+    
+    ' Set the table object
+    Set tbl = ws.ListObjects("Table1") ' Replace "Table1" with your actual table name
+    
+    ' Set the filter value
+    filterValue = "contract" ' Replace "contract" with the specific value you want to filter
+    
+    ' Check if the table exists
+    If Not tbl Is Nothing Then
+        ' Clear any existing filters
+        tbl.AutoFilter.ShowAllData
+        
+        ' Apply the filter
+        With tbl.Range
+            ' Filter the column C (3rd column)
+            .AutoFilter Field:=3, Criteria1:=filterValue
+        End With
+    End If
+End Sub
+
 
 
