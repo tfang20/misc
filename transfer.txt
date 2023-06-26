@@ -131,5 +131,18 @@ for box in boxplot['boxes']:
 
 i have a table in excel. using python, i want to read the table. the table is in range M1:T4. i want to use python to read the table and iterate through the rows. it should save each row into a unique array, ignoring the first row. so, row 2 should be in an array, row 3 in a different array, and row 4 in a different array. 
 
+import pandas as pd
+
+# Read the Excel file
+df = pd.read_excel('your_file.xlsx', sheet_name='your_sheet_name', header=None, usecols='M:T', skiprows=1)
+
+# Iterate through the rows
+row_arrays = []
+for _, row in df.iterrows():
+    row_arrays.append(row.tolist())
+
+# Print the row arrays
+for row_array in row_arrays:
+    print(row_array)
 
 
