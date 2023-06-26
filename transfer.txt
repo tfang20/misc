@@ -185,4 +185,39 @@ Sub FilterTableByValue()
 End Sub
 
 
+///
+
+Sub FilterTableByValue()
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim filterValue As String
+    
+    ' Set the worksheet object
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your actual sheet name
+    
+    ' Set the table object
+    Set tbl = ws.ListObjects("Table1") ' Replace "Table1" with your actual table name
+    
+    ' Set the filter value
+    filterValue = "contract B" ' Replace "contract B" with the specific value you want to filter
+    
+    ' Check if the table exists
+    If Not tbl Is Nothing Then
+        ' Clear any existing filters
+        tbl.AutoFilter.ShowAllData
+        
+        ' Get the range of the table (including headers)
+        Dim tableRange As Range
+        Set tableRange = tbl.Range
+        
+        ' Exclude the header rows
+        Dim dataRange As Range
+        Set dataRange = tableRange.Offset(1, 0).Resize(tableRange.Rows.Count - 1, tableRange.Columns.Count)
+        
+        ' Apply the filter
+        dataRange.AutoFilter Field:=3, Criteria1:=filterValue
+    End If
+End Sub
+
+
 
