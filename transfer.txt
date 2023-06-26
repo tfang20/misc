@@ -127,99 +127,6 @@ for box in boxplot['boxes']:
     ax.text(mid_x + 0.3, 1.5, '1.5', color='black', fontsize=8, verticalalignment='center')
 
 ##########################
-
-i have a sheet in excel that contains a table. the table starts at a10. i want to use vba to filter that table by a specific table value, such as "contract" in column C (header in c10, values in c11). show me the code for this, and utilize comments to explain 
-Sub FilterTableByValue()
-    Dim ws As Worksheet
-    Dim tbl As ListObject
-    Dim filterValue As String
-    
-    ' Set the worksheet object
-    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your actual sheet name
-    
-    ' Set the table object
-    Set tbl = ws.ListObjects("Table1") ' Replace "Table1" with your actual table name
-    
-    ' Set the filter value
-    filterValue = "contract" ' Replace "contract" with the specific value you want to filter
-    
-    ' Check if the table exists
-    If Not tbl Is Nothing Then
-        ' Clear any existing filters
-        tbl.AutoFilter.ShowAllData
-        
-        ' Apply the filter
-        With tbl.Range
-            ' Filter the column C (3rd column)
-            .AutoFilter Field:=3, Criteria1:=filterValue
-        End With
-    End If
-End Sub
-
-zzz
-Sub FilterTableByValue()
-    Dim ws As Worksheet
-    Dim tbl As ListObject
-    Dim filterValue As String
-    
-    ' Set the worksheet object
-    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your actual sheet name
-    
-    ' Set the table object
-    Set tbl = ws.ListObjects("Table1") ' Replace "Table1" with your actual table name
-    
-    ' Set the filter value
-    filterValue = "contract B" ' Replace "contract B" with the specific value you want to filter
-    
-    ' Check if the table exists
-    If Not tbl Is Nothing Then
-        ' Clear any existing filters
-        tbl.AutoFilter.ShowAllData
-        
-        ' Apply the filter
-        With tbl.Range
-            ' Filter the column C (3rd column)
-            .AutoFilter Field:=3, Criteria1:=filterValue
-        End With
-    End If
-End Sub
-
-
-///
-
-Sub FilterTableByValue()
-    Dim ws As Worksheet
-    Dim tbl As ListObject
-    Dim filterValue As String
-    
-    ' Set the worksheet object
-    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your actual sheet name
-    
-    ' Set the table object
-    Set tbl = ws.ListObjects("Table1") ' Replace "Table1" with your actual table name
-    
-    ' Set the filter value
-    filterValue = "contract B" ' Replace "contract B" with the specific value you want to filter
-    
-    ' Check if the table exists
-    If Not tbl Is Nothing Then
-        ' Clear any existing filters
-        tbl.AutoFilter.ShowAllData
-        
-        ' Get the range of the table (including headers)
-        Dim tableRange As Range
-        Set tableRange = tbl.Range
-        
-        ' Exclude the header rows
-        Dim dataRange As Range
-        Set dataRange = tableRange.Offset(1, 0).Resize(tableRange.Rows.Count - 1, tableRange.Columns.Count)
-        
-        ' Apply the filter
-        dataRange.AutoFilter Field:=3, Criteria1:=filterValue
-    End If
-End Sub
-
-hhsbs
 Sub CreateTableFromRange()
     Dim ws As Worksheet
     Dim rng As Range
@@ -238,4 +145,12 @@ Sub CreateTableFromRange()
     tbl.Name = "MyTable" ' Replace "MyTable" with your desired table name
 End Sub
 
-
+in vba, i want to write a large if statement and want to refactor it to be more efficient and readable. there are three variables: d1, d2, d3. these variables can either be empty or not empty. we will look at if the variables have data. there are 7 potential scenarios where the variables could have data:
+just d1
+just d2
+just d3
+d1, d2
+d1, d3
+d2, d3
+d1, d2, d3
+write the code for this that is simple, readable, and efficient. for now, you can keep leave the body of if statement blank
