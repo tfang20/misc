@@ -219,5 +219,23 @@ Sub FilterTableByValue()
     End If
 End Sub
 
+hhsbs
+Sub CreateTableFromRange()
+    Dim ws As Worksheet
+    Dim rng As Range
+    Dim tbl As ListObject
+    
+    ' Set the worksheet object
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your actual sheet name
+    
+    ' Set the range object
+    Set rng = ws.Range("A10:D20") ' Replace "A10:D20" with your custom range
+    
+    ' Create the table
+    Set tbl = ws.ListObjects.Add(xlSrcRange, rng, , xlYes) ' xlYes specifies that the range has headers
+    
+    ' Optional: Set the table name
+    tbl.Name = "MyTable" ' Replace "MyTable" with your desired table name
+End Sub
 
 
