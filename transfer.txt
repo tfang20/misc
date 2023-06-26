@@ -147,6 +147,7 @@ End Sub
 
 in vba, i have a filtered table. i want to use subtotal to calculate the mean of column C with the table filters. Show me how to do this
 
+//
 Sub FindLastRowOfFilteredTable()
     Dim lastRow As Long
     Dim filteredRange As Range
@@ -161,3 +162,28 @@ Sub FindLastRowOfFilteredTable()
         MsgBox "No visible cells found in the filtered table."
     End If
 End Sub
+
+//
+Sub FindLastRowOfFilteredTable()
+    Dim lastRow As Long
+    Dim tbl As ListObject
+    Dim rng As Range
+    
+    ' Assuming your table is named "Table1"
+    Set tbl = ThisWorkbook.Sheets("Sheet1").ListObjects("Table1")
+    
+    If tbl.AutoFilter.FilterMode Then
+        Set rng = tbl.DataBodyRange.SpecialCells(xlCellTypeVisible)
+        
+        If Not rng Is Nothing Then
+            lastRow = rng.Cells(rng.Cells.Count).Row
+            MsgBox "The last row of the filtered table is: " & lastRow
+        Else
+            MsgBox "No visible cells found in the filtered table."
+        End If
+    Else
+        MsgBox "The table is not filtered."
+    End If
+End Sub
+
+
