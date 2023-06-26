@@ -186,4 +186,4 @@ Sub FindLastRowOfFilteredTable()
     End If
 End Sub
 
-
+i have an excel with multiple tables. using python, i want to access the excel file, but only take a certain table to create a dataframe. the specific table range is in sheet2, M1:T4.
