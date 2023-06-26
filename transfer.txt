@@ -154,3 +154,29 @@ d1, d3
 d2, d3
 d1, d2, d3
 write the code for this that is simple, readable, and efficient. for now, you can keep leave the body of if statement blank
+
+
+Select Case True
+    Case Not IsEmpty(d1) And IsEmpty(d2) And IsEmpty(d3)
+        ' Scenario: just d1
+        ' Code for this scenario
+    Case IsEmpty(d1) And Not IsEmpty(d2) And IsEmpty(d3)
+        ' Scenario: just d2
+        ' Code for this scenario
+    Case IsEmpty(d1) And IsEmpty(d2) And Not IsEmpty(d3)
+        ' Scenario: just d3
+        ' Code for this scenario
+    Case Not IsEmpty(d1) And Not IsEmpty(d2) And IsEmpty(d3)
+        ' Scenario: d1, d2
+        ' Code for this scenario
+    Case Not IsEmpty(d1) And IsEmpty(d2) And Not IsEmpty(d3)
+        ' Scenario: d1, d3
+        ' Code for this scenario
+    Case IsEmpty(d1) And Not IsEmpty(d2) And Not IsEmpty(d3)
+        ' Scenario: d2, d3
+        ' Code for this scenario
+    Case Not IsEmpty(d1) And Not IsEmpty(d2) And Not IsEmpty(d3)
+        ' Scenario: d1, d2, d3
+        ' Code for this scenario
+End Select
+
