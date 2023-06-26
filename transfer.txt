@@ -126,5 +126,8 @@ for box in boxplot['boxes']:
     # Add value label for the bottom line
     ax.text(mid_x + 0.3, 1.5, '1.5', color='black', fontsize=8, verticalalignment='center')
 
+##########################
+
+i have a sheet in excel that contains a table. the table starts at a10. i want to use vba to filter that table by a specific table value, such as "contract" in column C (header in c10, values in c11). show me the code for this, and utilize comments to explain 
 
 
