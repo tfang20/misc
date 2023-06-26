@@ -127,58 +127,9 @@ for box in boxplot['boxes']:
     ax.text(mid_x + 0.3, 1.5, '1.5', color='black', fontsize=8, verticalalignment='center')
 
 
-in python with pandas, i have a dataframe with 3 rows and 4 columns of data. i want to iterate through the dataframe, saving each rows contents into a unique array. it should create 3 unique arrays, each with length 4.
+///
 
-import pandas as pd
-import numpy as np
-
-# Example DataFrame
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6], 'C': [7, 8, 9], 'D': [10, 11, 12]})
-
-# Initialize an empty list to store the arrays
-arrays = []
-
-# Iterate through each row in the DataFrame
-for _, row in df.iterrows():
-    # Convert the row to a numpy array
-    arr = np.array(row)
-
-    # Append the array to the list
-    arrays.append(arr)
-
-# Display the arrays
-for arr in arrays:
-    print(arr)
-
-import pandas as pd
-
-# Example DataFrame
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6], 'C': [7, 8, 9], 'D': [10, 11, 12]})
-
-# Initialize empty lists to store the arrays
-array1 = []
-array2 = []
-array3 = []
-
-# Iterate through each row in the DataFrame
-for index, row in df.iterrows():
-    # Extract the values from the row
-    value1 = row['A']
-    value2 = row['B']
-    value3 = row['C']
-    value4 = row['D']
-
-    # Append the values to respective arrays
-    array1.append(value1)
-    array2.append(value2)
-    array3.append(value3)
-
-# Display the arrays
-print(array1)
-print(array2)
-print(array3)
-
-
+i have a table in excel. using python, i want to read the table. the table is in range M1:T4. i want to use python to read the table and iterate through the rows. it should save each row into a unique array, ignoring the first row. so, row 2 should be in an array, row 3 in a different array, and row 4 in a different array. 
 
 
 
