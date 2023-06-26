@@ -145,38 +145,5 @@ Sub CreateTableFromRange()
     tbl.Name = "MyTable" ' Replace "MyTable" with your desired table name
 End Sub
 
-in vba, i want to write a large if statement and want to refactor it to be more efficient and readable. there are three variables: d1, d2, d3. these variables can either be empty or not empty. we will look at if the variables have data. there are 7 potential scenarios where the variables could have data:
-just d1
-just d2
-just d3
-d1, d2
-d1, d3
-d2, d3
-d1, d2, d3
-write the code for this that is simple, readable, and efficient. for now, you can keep leave the body of if statement blank
-
-
-Select Case True
-    Case Not IsEmpty(d1) And IsEmpty(d2) And IsEmpty(d3)
-        ' Scenario: just d1
-        ' Code for this scenario
-    Case IsEmpty(d1) And Not IsEmpty(d2) And IsEmpty(d3)
-        ' Scenario: just d2
-        ' Code for this scenario
-    Case IsEmpty(d1) And IsEmpty(d2) And Not IsEmpty(d3)
-        ' Scenario: just d3
-        ' Code for this scenario
-    Case Not IsEmpty(d1) And Not IsEmpty(d2) And IsEmpty(d3)
-        ' Scenario: d1, d2
-        ' Code for this scenario
-    Case Not IsEmpty(d1) And IsEmpty(d2) And Not IsEmpty(d3)
-        ' Scenario: d1, d3
-        ' Code for this scenario
-    Case IsEmpty(d1) And Not IsEmpty(d2) And Not IsEmpty(d3)
-        ' Scenario: d2, d3
-        ' Code for this scenario
-    Case Not IsEmpty(d1) And Not IsEmpty(d2) And Not IsEmpty(d3)
-        ' Scenario: d1, d2, d3
-        ' Code for this scenario
-End Select
+in vba, i have a filtered table. i want to use subtotal to calculate the mean of column C with the table filters. Show me how to do this
 
