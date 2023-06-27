@@ -191,3 +191,28 @@ ax.set_title('Volpath')
 plt.show()
 
 
+Sub CreateBoxPlot()
+    Dim ws As Worksheet
+    Dim chartObj As ChartObject
+    Dim rngData As Range
+    
+    ' Set the worksheet to the desired sheet
+    Set ws = ThisWorkbook.Sheets("Sheet1")
+    
+    ' Set the range of data for the box plot
+    Set rngData = ws.Range("A1:F10")  ' Replace with your specific range
+    
+    ' Create a new chart object on the worksheet
+    Set chartObj = ws.ChartObjects.Add(Left:=100, Top:=100, Width:=400, Height:=300)
+    
+    ' Set the chart type to box plot
+    chartObj.Chart.ChartType = xlBoxwhisker
+    
+    ' Set the source data range for the box plot
+    chartObj.Chart.SetSourceData rngData
+    
+    ' Set other chart properties as needed
+    ' ...
+End Sub
+
+
