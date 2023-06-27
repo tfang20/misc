@@ -41,3 +41,93 @@ Sub SaveAndCloseExcel_CallPython()
     ' Call the Python script using the Shell function
     Shell cmd, vbNormalFocus
 End Sub
+
+---------------
+given this python code, i want to add more value labels for the quartile lines of the boxplot; for any given boxplot, this would be the 2 and 4th value. for example, for boxplot 1, this would be array1[1] and array[3], 2 and 4 respectively. this should be done for all visible boxplots. this should not be hardcoded to the values, it should be dynamic and update if the array and boxplot changes: import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+import pandas as pd
+
+file = pd.ExcelFile(r"C:\Users\tfang03\OneDrive - BMO Financial Group\Desktop\volpath\step 2 - filtering.xlsm")
+
+df = file.parse('Func_hide', header = None , skiprows=1, usecols="M:T", nrows = 3)
+
+
+
+# Custom values for the boxplots
+array1 = [1, 2, 3, 4, 5]
+array2 = [3,4,5,6,7]
+array3 = []
+combinedArr = array1 + array2 + array3
+chart1, chart2, chart3 = "chart", "chart", "chart"
+
+# Creating the figure and axis
+fig, ax = plt.subplots()
+fig.set_size_inches(10,8)
+
+# Creating the boxplots
+data = []
+
+if array1 and not any(val != "" for val in array2) and not any(val != "" for val in array3):
+    # Only array1 has values, arrays 2 and 3 are all empty
+    data.append(array1)
+
+elif array1 and array2 and not any(val != "" for val in array3):
+    # Array1 and array2 have values, array3 is all empty
+    data.append(array1)
+    data.append(array2)
+
+elif array1 and array2 and array3:
+    # All arrays have values
+    data.append(array1)
+    data.append(array2)
+    data.append(array3)
+
+if data:
+    boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
+
+    # Customizing the boxplot colors
+    colors = ['lightblue'] * len(data)
+    for patch, color in zip(boxplot['boxes'], colors):
+        patch.set_facecolor(color)
+
+    for i, box in enumerate(boxplot['boxes']):
+        if i < len(data):
+            # Get the vertices (coordinates) of the box
+            box_coords = box.get_path().vertices
+
+            # Calculate the x-coordinate of the middle of the box
+            mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+
+            # Calculate the statistics for the current box plot
+            box_values = boxplot['medians'][i].get_ydata()
+            box_min = boxplot['caps'][2 * i].get_ydata()[0]
+            box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
+
+            # Add value label for the top line
+            ax.text(mid_x + 0.3, box_max, "60d high "f'{box_max:.1f}', color='black', fontsize=6, verticalalignment='center')
+
+            # Add value label for the bottom line
+            ax.text(mid_x + 0.3, box_min, "60d Low "f'{box_min:.1f}', color='black', fontsize=6, verticalalignment='center')
+
+            # Add value label for the middle line
+            ax.text(mid_x + 0.3, box_values[0], "Curr. Vol "f'{box_values[0]:.1f}', color='black', fontsize=6, verticalalignment='center')
+
+
+
+
+# Setting the y-axis limits and ticks
+min_value = np.inf if not data else np.nanmin([np.nanmin(arr) for arr in data])
+max_value = -np.inf if not data else np.nanmax([np.nanmax(arr) for arr in data])
+ax.set_ylim(min_value -1, max_value +1)
+ax.set_yticks(np.linspace(min_value, max_value, num=6))
+
+# Setting the x-axis label
+ax.set_xlabel(chart1 + " / " + chart2 + " / " + chart3)
+
+# Adding a title
+ax.set_title('Volpath')
+
+# Displaying the plot
+plt.show()
+
