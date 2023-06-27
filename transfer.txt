@@ -1,148 +1,17 @@
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-
-# Custom values for the boxplots
-values = [1.5, 2, 3, 4, 4.5]
-
-# Creating the figure and axis
-fig, ax = plt.subplots()
-
-# Creating the boxplots
-boxplot = ax.boxplot([values, values, values], vert=True, widths=0.5, patch_artist=True)
-
-# Customizing the boxplot colors
-colors = ['lightblue', 'lightblue', 'lightblue']
-for patch, color in zip(boxplot['boxes'], colors):
-    patch.set_facecolor(color)
-
-# Adding dashed lines within each box at 2.5 and 3.5
-line1 = Line2D([0.75, 2.25], [2.5, 2.5], color='red', linestyle='dashed')
-line2 = Line2D([0.75, 2.25], [3.5, 3.5], color='green', linestyle='dashed')
-line3 = Line2D([0.75, 2.25], [3, 3], color='blue', linestyle='dashed')
-
-for box in boxplot['boxes']:
-    # Get the vertices (coordinates) of the box
-    box_coords = box.get_path().vertices
+Sub CallPythonScript()
+    Dim scriptPath As String
+    Dim pythonPath As String
+    Dim cmd As String
     
-    # Calculate the x-coordinate of the middle of the box
-    mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+    ' Set the path to the Python script
+    scriptPath = "C:\path\to\your\python_script.py"
     
-    # Add dashed line within each box at y-coordinate 2.5, in red color
-    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [2.5, 2.5], color='red', linestyle='dashed'))
+    ' Set the path to the Python interpreter
+    pythonPath = "C:\path\to\python.exe"
     
-    # Add dashed line within each box at y-coordinate 3.5, in green color
-    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3.5, 3.5], color='green', linestyle='dashed'))
+    ' Build the command to execute the Python script
+    cmd = pythonPath & " " & scriptPath
     
-    # Add dashed line within each box at y-coordinate 3, in blue color
-    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3, 3], color='blue', linestyle='dashed'))
-
-# Setting the y-axis limits and ticks
-ax.set_ylim(-5, 5)
-ax.set_yticks([i / 10 for i in range(-50, 60, 10)])
-ax.set_yticklabels([str(i / 10) for i in range(-50, 60, 10)])
-
-# Setting the x-axis label
-ax.set_xlabel('Box Plots')
-
-# Adding a title
-ax.set_title('Custom Vertical Box Plots with Dashed Lines Inside Boxes')
-
-# Displaying the plot
-plt.show()
-
-
-
-
-
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-
-# Custom values for the boxplots
-values = [1.5, 2, 3, 4, 4.5]
-
-# Creating the figure and axis
-fig, ax = plt.subplots()
-
-# Creating the boxplots
-boxplot = ax.boxplot([values, values, values], vert=True, widths=0.5, patch_artist=True)
-
-# Customizing the boxplot colors
-colors = ['lightblue', 'lightblue', 'lightblue']
-for patch, color in zip(boxplot['boxes'], colors):
-    patch.set_facecolor(color)
-
-# Adding dashed lines within each box at 2.5 and 3.5
-line1 = Line2D([0.75, 2.25], [2.5, 2.5], color='red', linestyle='dashed')
-line2 = Line2D([0.75, 2.25], [3.5, 3.5], color='green', linestyle='dashed')
-line3 = Line2D([0.75, 2.25], [3, 3], color='blue', linestyle='dashed')
-
-for box in boxplot['boxes']:
-    # Get the vertices (coordinates) of the box
-    box_coords = box.get_path().vertices
-    
-    # Calculate the x-coordinate of the middle of the box
-    mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
-    
-    # Add dashed line within each box at y-coordinate 2.5, in red color
-    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [2.5, 2.5], color='red', linestyle='dashed'))
-    # Add value label for the middle line
-    ax.text(mid_x + 0.3, 2.5, '3', color='red', fontsize=8, verticalalignment='center')
-
-    # Add dashed line within each box at y-coordinate 3.5, in green color
-    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3.5, 3.5], color='green', linestyle='dashed'))
-    # Add value label for the middle line
-    ax.text(mid_x + 0.3, 3.5, '4', color='green', fontsize=8, verticalalignment='center')
-
-    # Add dashed line within each box at y-coordinate 3, in blue color
-    ax.add_line(Line2D([mid_x - 0.25, mid_x + 0.25], [3, 3], color='blue', linestyle='dashed'))
-    # Add value label for the middle line
-    ax.text(mid_x + 0.3, 3, '3', color='blue', fontsize=8, verticalalignment='center')
-
-# Setting the y-axis limits and ticks
-ax.set_ylim(-5, 5)
-ax.set_yticks([i / 10 for i in range(-50, 60, 10)])
-ax.set_yticklabels([str(i / 10) for i in range(-50, 60, 10)])
-
-# Setting the x-axis label
-ax.set_xlabel('Box Plots')
-
-# Adding a title
-ax.set_title('Custom Vertical Box Plots with Dashed Lines Inside Boxes')
-
-# Displaying the plot
-plt.show()
-
-
-for box in boxplot['boxes']:
-    # Get the vertices (coordinates) of the box
-    box_coords = box.get_path().vertices
-    
-    # Calculate the x-coordinate of the middle of the box
-    mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
-    
-    # Add value label for the top line
-    ax.text(mid_x + 0.3, 4.5, '4.5', color='black', fontsize=8, verticalalignment='center')
-    
-    # Add value label for the bottom line
-    ax.text(mid_x + 0.3, 1.5, '1.5', color='black', fontsize=8, verticalalignment='center')
-
-
-///
-
-i have a table in excel. using python, i want to read the table. the table is in range M1:T4. i want to use python to read the table and iterate through the rows. it should save each row into a unique array, ignoring the first row. so, row 2 should be in an array, row 3 in a different array, and row 4 in a different array. 
-
-import pandas as pd
-
-# Read the Excel file
-df = pd.read_excel('your_file.xlsx', sheet_name='your_sheet_name', header=None, usecols='M:T', skiprows=1)
-
-# Iterate through the rows
-row_arrays = []
-for _, row in df.iterrows():
-    row_arrays.append(row.tolist())
-
-# Print the row arrays
-for row_array in row_arrays:
-    print(row_array)
-
-
+    ' Call the Python script using the Shell function
+    Shell cmd, vbNormalFocus
+End Sub
