@@ -53,3 +53,78 @@ ax.set_title('Custom Vertical Box Plots with Value Labels for Top, Bottom, and M
 plt.show()
 
 -----------------------------------------------------------
+only graphs when array has values, if array = ["","","","",""] then it will not create a box plot
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Custom values for the boxplots
+array1 = [1, 2, 3, 4, 5]
+array2 = [3,4,5,6,7]
+array3 = [8,9,10,11,12]
+
+# Creating the figure and axis
+fig, ax = plt.subplots()
+
+# Creating the boxplots
+data = []
+
+if array1 and not any(val != "" for val in array2) and not any(val != "" for val in array3):
+    # Only array1 has values, arrays 2 and 3 are all empty
+    data.append(array1)
+
+elif array1 and array2 and not any(val != "" for val in array3):
+    # Array1 and array2 have values, array3 is all empty
+    data.append(array1)
+    data.append(array2)
+
+elif array1 and array2 and array3:
+    # All arrays have values
+    data.append(array1)
+    data.append(array2)
+    data.append(array3)
+
+if data:
+    boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
+
+    # Customizing the boxplot colors
+    colors = ['lightblue'] * len(data)
+    for patch, color in zip(boxplot['boxes'], colors):
+        patch.set_facecolor(color)
+
+    for i, box in enumerate(boxplot['boxes']):
+        if i < len(data):
+            # Get the vertices (coordinates) of the box
+            box_coords = box.get_path().vertices
+
+            # Calculate the x-coordinate of the middle of the box
+            mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+
+            # Calculate the statistics for the current box plot
+            box_values = boxplot['medians'][i].get_ydata()
+            box_min = boxplot['caps'][2 * i].get_ydata()[0]
+            box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
+
+            # Add value label for the top line
+            ax.text(mid_x + 0.3, box_max, f'{box_max:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+            # Add value label for the bottom line
+            ax.text(mid_x + 0.3, box_min, f'{box_min:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+            # Add value label for the middle line
+            ax.text(mid_x + 0.3, box_values[0], f'{box_values[0]:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+# Setting the y-axis limits and ticks
+min_value = np.inf if not data else np.nanmin([np.nanmin(arr) for arr in data])
+max_value = -np.inf if not data else np.nanmax([np.nanmax(arr) for arr in data])
+ax.set_ylim(min_value, max_value)
+ax.set_yticks(np.linspace(min_value, max_value, num=6))
+
+# Setting the x-axis label
+ax.set_xlabel('Box Plots')
+
+# Adding a title
+ax.set_title('Custom Vertical Box Plots with Value Labels')
+
+# Displaying the plot
+plt.show()
+
