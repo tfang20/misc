@@ -228,3 +228,35 @@ ax.set_title('Custom Vertical Box Plots with Value Labels')
 # Displaying the plot
 plt.show()
 
+----------------------------
+just secondary y
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Custom values for the box plots
+array1 = [1, 2, 3, 4, 5]
+array2 = [45, 47, 48, 50, 58]
+
+# Creating the figure and primary axis
+fig, ax = plt.subplots()
+
+# Creating the boxplots
+data = [array1, array2]
+
+boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
+
+# Create a secondary y-axis for the box plot with larger values
+ax_sec = ax.twinx()
+
+# Customize the appearance of the secondary y-axis
+ax_sec.spines['right'].set_visible(True)
+ax_sec.yaxis.set_label_position('right')
+ax_sec.yaxis.set_ticks_position('right')
+
+# Set the label for the secondary y-axis
+ax_sec.set_ylabel('Secondary Y-axis')
+
+# Displaying the plot
+plt.show()
+
