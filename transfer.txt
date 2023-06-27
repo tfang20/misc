@@ -153,3 +153,114 @@ ax.set_title('Volpath')
 plt.show()
 
 -----------------------
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import matplotlib.patches as mpatches
+
+file = pd.ExcelFile(r"C:\Users\tfang03\OneDrive - BMO Financial Group\Desktop\volpath\step 2 - filtering.xlsm")
+df = file.parse('Func_hide', header=None, skiprows=1, usecols="M:T", nrows=3)
+
+array1 = df.iloc[0, 3:].tolist()
+array2 = df.iloc[1, 3:].tolist()
+array3 = df.iloc[2, 3:].tolist()
+combinedArr = array1 + array2 + array3
+
+chart1 = str(df.iloc[0, 1]) + " " + str(df.iloc[0, 2])
+chart2 = str(df.iloc[1, 1]) + " " + str(df.iloc[1, 2])
+chart3 = str(df.iloc[2, 1]) + " " + str(df.iloc[2, 2])
+
+# Creating the figure and axis for each boxplot
+figs = []
+axes = []
+
+if array1:
+    fig1, ax1 = plt.subplots()
+    fig1.set_size_inches(10, 8)
+    figs.append(fig1)
+    axes.append(ax1)
+
+if array2:
+    fig2, ax2 = plt.subplots()
+    fig2.set_size_inches(10, 8)
+    figs.append(fig2)
+    axes.append(ax2)
+
+if array3:
+    fig3, ax3 = plt.subplots()
+    fig3.set_size_inches(10, 8)
+    figs.append(fig3)
+    axes.append(ax3)
+
+# Creating the boxplots for each figure
+for i, ax in enumerate(axes):
+    data = []
+    if array1:
+        data.append(array1)
+    if array2:
+        data.append(array2)
+    if array3:
+        data.append(array3)
+
+    if data:
+        boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
+
+        # Customizing the boxplot colors
+        colors = ['lightblue'] * len(data)
+        for patch, color in zip(boxplot['boxes'], colors):
+            patch.set_facecolor(color)
+
+        for j, box in enumerate(boxplot['boxes']):
+            if j < len(data):
+                # Get the vertices (coordinates) of the box
+                box_coords = box.get_path().vertices
+
+                # Calculate the x-coordinate of the middle of the box
+                mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+
+                # Calculate the statistics for the current box plot
+                box_values = boxplot['medians'][j].get_ydata()
+                box_min = boxplot['caps'][2 * j].get_ydata()[0]
+                box_max = boxplot['caps'][2 * j + 1].get_ydata()[0]
+
+                # Add value labels for the 30d Low/High
+                quartile_values = np.percentile(data[j], [25, 75])
+                ax.text(mid_x + 0.3, quartile_values[0], f'30d Low {quartile_values[0]:.2f}', color='blue',
+                        fontsize=6, verticalalignment='center')
+                ax.text(mid_x + 0.3, quartile_values[1], f'30d High {quartile_values[1]:.2f}', color='blue',
+                        fontsize=6, verticalalignment='center')
+
+                # Add value label for the 60d High
+                ax.text(mid_x + 0.3, box_max, f'60d High {box_max:.2f}', color='green', fontsize=6,
+                        verticalalignment='center')
+
+                # Add value label for the 60d Low
+                ax.text(mid_x + 0.3, box_min, f'60d Low {box_min:.2f}', color='green', fontsize=6,
+                        verticalalignment='center')
+
+                # Add value label for the Current Vol
+                ax.text(mid_x + 0.3, box_values[0], f'Current Vol {box_values[0]:.2f}', color='red', fontsize=6,
+                        verticalalignment='center')
+
+        # Adding legend
+        green = mpatches.Patch(color='green', label='60 Day')
+        red = mpatches.Patch(color='red', label="Current Vol")
+        blue = mpatches.Patch(color='blue', label="30 Day")
+        ax.legend(handles=[green, red, blue])
+
+        # Setting the y-axis limits and ticks
+        min_value = np.inf if not data else np.nanmin([np.nanmin(arr) for arr in data])
+        max_value = -np.inf if not data else np.nanmax([np.nanmax(arr) for arr in data])
+        ax.set_ylim(min_value * 1.2, max_value * 1.2)
+        ax.set_yticks(np.linspace(min_value - 0.2, max_value + 0.2, num=12))
+
+        # Setting the x-axis label
+        ax.set_xlabel(chart1 + " / " + chart2 + " / " + chart3)
+
+        # Adding a title
+        ax.set_title('Volpath')
+
+# Displaying plots
+for fig in figs:
+    plt.figure(fig.number)
+    plt.show()
