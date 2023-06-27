@@ -15,3 +15,29 @@ Sub CallPythonScript()
     ' Call the Python script using the Shell function
     Shell cmd, vbNormalFocus
 End Sub
+
+
+Sub SaveAndCloseExcel_CallPython()
+    ' Save the file
+    ThisWorkbook.Save
+    
+    ' Close Excel
+    Application.Quit
+    
+    ' Call the Python script
+    Dim scriptPath As String
+    Dim pythonPath As String
+    Dim cmd As String
+    
+    ' Set the path to the Python script
+    scriptPath = "C:\path\to\your\python_script.py"
+    
+    ' Set the path to the Python interpreter
+    pythonPath = "C:\path\to\python.exe"
+    
+    ' Build the command to execute the Python script
+    cmd = pythonPath & " " & scriptPath
+    
+    ' Call the Python script using the Shell function
+    Shell cmd, vbNormalFocus
+End Sub
