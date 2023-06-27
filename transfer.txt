@@ -131,3 +131,14 @@ ax.set_title('Volpath')
 # Displaying the plot
 plt.show()
 
+To fill one jug with exactly 4 gallons of water using a 5-gallon jug and a 3-gallon jug, you can follow these steps:
+
+Start with both jugs empty.
+Fill the 3-gallon jug to its maximum capacity of 3 gallons.
+Pour the water from the 3-gallon jug into the 5-gallon jug.
+Now, the 3-gallon jug is empty, and the 5-gallon jug contains 3 gallons of water.
+Fill the 3-gallon jug again with water.
+Pour the water from the 3-gallon jug into the 5-gallon jug until the 5-gallon jug is full (which leaves 1 gallon of water in the 3-gallon jug).
+Now, the 3-gallon jug is empty, and the 5-gallon jug contains 4 gallons of water.
+By following these steps, you can fill the 5-gallon jug with exactly 4 gallons of water.
+
