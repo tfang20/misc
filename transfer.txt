@@ -107,3 +107,82 @@ show_array_table(array1, array2, array3)
 -----------
 i have this code in python. since array 3 has values so much larger than array1 and array2, i want the code to create a secondary y axis on the right and graph array3 box plot - or boxplot3 - against the secondary y axis. to reiterate, boxplot3 should be agains the secondary y axis, not the primary; array1 and array2 are plotted against left, array3 is plotted against right
 
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+import pandas as pd
+import matplotlib.patches as mpatches
+from io import BytesIO
+import xlsxwriter
+
+file = pd.ExcelFile(r"C:\Users\tfang03\OneDrive - BMO Financial Group\Desktop\volpath\step 2 - filtering.xlsm")
+df = file.parse('Func_hide', header=None, skiprows=1, usecols="M:T", nrows=3)
+
+array1 = [-0.5, -0.45, 0.12, 0.24, 0.5]
+array2 = [1.7, 4, 5, 5.9, 7]
+array3 = [22, 24, 25, 26, 28]
+combinedArr = array1 + array2 + array3
+chart1, chart2, chart3 = "chart", "chart", "chart"
+
+fig, ax = plt.subplots()
+fig.set_size_inches(10, 8)
+
+data = []
+y_labels = ['Array 1', 'Array 2', 'Array 3']
+
+if array1:
+    data.append(array1)
+
+if array2:
+    data.append(array2)
+
+if array3:
+    data.append(array3)
+    ax2 = ax.twinx()
+    ax2.spines['right'].set_position(('outward', 60))
+    ax2.set_ylabel('Array 3')
+
+if data:
+    boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
+
+    colors = ['lightblue'] * len(data)
+    for patch, color in zip(boxplot['boxes'], colors):
+        patch.set_facecolor(color)
+
+    for i, box in enumerate(boxplot['boxes']):
+        if i < len(data):
+            box_coords = box.get_path().vertices
+            mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+
+            quartile_values = np.percentile(data[i], [25, 75])
+            ax.text(mid_x + 0.3, quartile_values[0], f'30d Low {quartile_values[0]:.2f}', color='blue', fontsize=6,
+                    verticalalignment='center')
+            ax.text(mid_x + 0.3, quartile_values[1], f'30d Low {quartile_values[1]:.2f}', color='blue', fontsize=6,
+                    verticalalignment='center')
+
+            box_min = boxplot['caps'][2 * i].get_ydata()[0]
+            box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
+            ax.text(mid_x + 0.3, box_max, f'60d High {box_max:.2f}', color='green', fontsize=6,
+                    verticalalignment='center')
+            ax.text(mid_x + 0.3, box_min, f'60d Low {box_min:.2f}', color='green', fontsize=6,
+                    verticalalignment='center')
+
+            box_values = boxplot['medians'][i].get_ydata()
+            ax.text(mid_x + 0.3, box_values[0], f'Curr. Vol {box_values[0]:.2f}', color='red', fontsize=6,
+                    verticalalignment='center')
+
+green = mpatches.Patch(color='green', label='60 Day')
+red = mpatches.Patch(color='red', label="Curr. Vol")
+blue = mpatches.Patch(color='blue', label="30 Day")
+plt.legend(handles=[green, red, blue])
+
+min_value = np.inf if not data else np.nanmin([np.nanmin(arr) for arr in data])
+max_value = -np.inf if not data else np.nanmax([np.nanmax(arr) for arr in data])
+ax.set_ylim(min_value * -1.2, max_value * 1.2)
+ax.set_yticks(np.linspace(min_value - 0.2, max_value + 0.2, num=12))
+
+ax.set_xlabel(chart1 + " / " + chart2 + " / " + chart3)
+ax.set_title('Volpath')
+
+plt.show()
+
