@@ -1,1 +1,55 @@
-ff
+creates vertical box plots that dynamically updates values
+import matplotlib.pyplot as plt
+
+# Custom values for the boxplots
+array1 = [1, 2, 3, 4, 5]
+array2 = [2, 3, 4, 5, 7]
+array3 = [3, 4, 5, 6, 8]
+
+# Creating the figure and axis
+fig, ax = plt.subplots()
+
+# Creating the boxplots
+boxplot = ax.boxplot([array1, array2, array3], vert=True, widths=0.5, patch_artist=True)
+
+# Customizing the boxplot colors
+colors = ['lightblue', 'lightblue', 'lightblue']
+for patch, color in zip(boxplot['boxes'], colors):
+    patch.set_facecolor(color)
+
+for i, box in enumerate(boxplot['boxes']):
+    # Get the vertices (coordinates) of the box
+    box_coords = box.get_path().vertices
+    
+    # Calculate the x-coordinate of the middle of the box
+    mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+    
+    # Calculate the statistics for the current box plot
+    box_values = boxplot['medians'][i].get_ydata()
+    box_min = boxplot['caps'][2*i].get_ydata()[0]
+    box_max = boxplot['caps'][2*i + 1].get_ydata()[0]
+    
+    # Add value label for the top line
+    ax.text(mid_x + 0.3, box_max, f'{box_max:.1f}', color='black', fontsize=8, verticalalignment='center')
+    
+    # Add value label for the bottom line
+    ax.text(mid_x + 0.3, box_min, f'{box_min:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+    # Add value label for the middle line
+    ax.text(mid_x + 0.3, box_values[0], f'{box_values[0]:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+# Setting the y-axis limits and ticks
+ax.set_ylim(-5, 10)
+ax.set_yticks([i / 10 for i in range(-50, 110, 10)])
+ax.set_yticklabels([str(i / 10) for i in range(-50, 110, 10)])
+
+# Setting the x-axis label
+ax.set_xlabel('Box Plots')
+
+# Adding a title
+ax.set_title('Custom Vertical Box Plots with Value Labels for Top, Bottom, and Middle Lines')
+
+# Displaying the plot
+plt.show()
+
+-----------------------------------------------------------
