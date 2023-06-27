@@ -70,3 +70,36 @@ plt.show()
 
 --------------
 i have 3 arrays in python each of length 5. i want code to output the arrays as a table in a popup window, with labels for each index. for example, all the arrays will be output on the popup table, and next to the values for each array there should be the index 0,1,2,3, and 4 respectively.
+import tkinter as tk
+from tkinter import ttk
+
+def show_array_table(array1, array2, array3):
+    root = tk.Tk()
+    root.title("Arrays Table")
+
+    table = ttk.Treeview(root)
+    table["columns"] = ("array1", "array2", "array3")
+    table.column("#0", width=50, minwidth=50)
+    table.column("array1", width=100, minwidth=100)
+    table.column("array2", width=100, minwidth=100)
+    table.column("array3", width=100, minwidth=100)
+
+    table.heading("#0", text="Index")
+    table.heading("array1", text="Array 1")
+    table.heading("array2", text="Array 2")
+    table.heading("array3", text="Array 3")
+
+    for i in range(len(array1)):
+        index = str(i)
+        table.insert("", "end", text=index, values=(array1[i], array2[i], array3[i]))
+
+    table.pack(padx=10, pady=10)
+    root.mainloop()
+
+# Example arrays
+array1 = [1, 2, 3, 4, 5]
+array2 = [11, 12, 13, 14, 15]
+array3 = [21, 22, 23, 24, 25]
+
+# Show the arrays as a table in a popup window
+show_array_table(array1, array2, array3)
