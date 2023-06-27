@@ -44,6 +44,25 @@ End Sub
 
 ---------------
 in python, i have two arrays, array1 = [1,2,3,4,5] and array2 = [11,12,13,14,15]. i want to create box plots vertical box plots with the two arrays. that is, vertical boxplot1 for array1 and vertical boxplot2 for array2, both on the same pyplot figure. for boxplot1 i want it plotted against the primary y axis on the right. for boxplot2, i want the code to create a secondary y axis and for boxplot2 to be plotted against that axis. to reiterate, boxplot1 against primary y, boxplot2 against secondary y
+import matplotlib.pyplot as plt
+
+array1 = [1, 2, 3, 4, 5]
+array2 = [11, 12, 13, 14, 15]
+
+fig, ax1 = plt.subplots()
+
+# Creating boxplot1 against the primary y-axis
+bp1 = ax1.boxplot(array1, vert=True)
+ax1.set_ylabel('Array 1')
+
+# Creating a secondary y-axis
+ax2 = ax1.twinx()
+
+# Creating boxplot2 against the secondary y-axis
+bp2 = ax2.boxplot(array2, vert=True)
+ax2.set_ylabel('Array 2')
+
+plt.show()
 
 
 
