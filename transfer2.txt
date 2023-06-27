@@ -128,3 +128,103 @@ ax.set_title('Custom Vertical Box Plots with Value Labels')
 # Displaying the plot
 plt.show()
 
+---------------------------------------------------------------
+code to create secondary axis for outlier data - BROKEN
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Custom values for the box plots
+array1 = [1, 2, 3, 4, 5]
+array2 = [45, 47, 48, 50, 58]
+array3 = [1, 2, 3, 4, 5]
+
+# Creating the figure and primary axis
+fig, ax = plt.subplots()
+
+# Creating the boxplots
+data = []
+
+if array1 and not any(val != "" for val in array2) and not any(val != "" for val in array3):
+    # Only array1 has values, arrays 2 and 3 are all empty
+    data.append(array1)
+
+elif array1 and array2 and not any(val != "" for val in array3):
+    # Array1 and array2 have values, array3 is all empty
+    data.append(array1)
+    data.append(array2)
+
+elif array1 and array2 and array3:
+    # All arrays have values
+    data.append(array1)
+    data.append(array2)
+    data.append(array3)
+
+if data:
+    boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
+
+    # Customizing the boxplot colors
+    colors = ['lightblue'] * len(data)
+    for patch, color in zip(boxplot['boxes'], colors):
+        patch.set_facecolor(color)
+
+    for i, box in enumerate(boxplot['boxes']):
+        if i < len(data):
+            # Get the vertices (coordinates) of the box
+            box_coords = box.get_path().vertices
+
+            # Calculate the x-coordinate of the middle of the box
+            mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+
+            # Calculate the statistics for the current box plot
+            box_values = boxplot['medians'][i].get_ydata()
+            box_min = boxplot['caps'][2 * i].get_ydata()[0]
+            box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
+
+            # Add value label for the top line
+            ax.text(mid_x + 0.3, box_max, f'{box_max:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+            # Add value label for the bottom line
+            ax.text(mid_x + 0.3, box_min, f'{box_min:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+            # Add value label for the middle line
+            ax.text(mid_x + 0.3, box_values[0], f'{box_values[0]:.1f}', color='black', fontsize=8, verticalalignment='center')
+
+    # Check if a secondary y-axis is needed
+    if len(data) > 1:
+        # Find the array with smaller values (array1 or array3) and assign it to the primary y-axis
+        primary_data = array1 if np.nanmax(array1) < np.nanmax(array3) else array3
+
+        # Create the secondary y-axis for array2 with larger values
+        ax_sec = ax.twinx()
+
+        # Plot array2 on the secondary y-axis
+        ax_sec.plot([], [])  # Dummy plot for the secondary y-axis to avoid overlapping with the primary y-axis
+
+        # Calculate the min and max values for the primary y-axis limits
+        primary_min_value = np.nanmin(primary_data)
+        primary_max_value = np.nanmax(primary_data)
+
+        # Setting the primary y-axis limits and ticks
+        ax.set_ylim(primary_min_value, primary_max_value)
+        ax.set_yticks(np.linspace(primary_min_value, primary_max_value, num=6))
+
+        # Calculate the min and max values for the secondary y-axis limits
+        secondary_min_value = np.nanmin(array2)
+        secondary_max_value = np.nanmax(array2)
+
+        # Setting the secondary y-axis limits and ticks
+        ax_sec.set_ylim(secondary_min_value, secondary_max_value)
+        ax_sec.set_yticks(np.linspace(secondary_min_value, secondary_max_value, num=6))
+
+        # Set the label for the secondary y-axis
+        ax_sec.set_ylabel('Secondary Y-axis')
+
+# Setting the x-axis label
+ax.set_xlabel('Box Plots')
+
+# Adding a title
+ax.set_title('Custom Vertical Box Plots with Value Labels')
+
+# Displaying the plot
+plt.show()
+
