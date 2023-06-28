@@ -383,3 +383,23 @@ for x in arr:
     values.append(normal_probabilities)
 
 print("Sum of probabilities is " + str(np.sum(values)))
+
+import numpy as np
+from scipy.stats import norm
+
+arr = [-1.5, -1, -0.5, 0, 0.5, 1, 1.5]
+values = []
+
+# Calculate probabilities for the array of values in the normal distribution using the PDF
+probabilities = norm.pdf(arr, loc=np.mean(arr), scale=np.std(arr))
+
+# Print the probabilities for each value
+for prob in probabilities:
+    print(prob)
+    values.append(prob)
+
+# Sum of probabilities
+total_probability = np.sum(values)
+
+# Print the sum of probabilities
+print("Sum of Probabilities:", total_probability)
