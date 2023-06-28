@@ -329,5 +329,42 @@ plt.legend()
 plt.show()
 
 
+import numpy as np
+from scipy.stats import norm, gamma, expon, lognorm
+
+# Parameters for the distributions
+normal_mean = 5
+normal_std = 2
+gamma_shape = 2
+gamma_scale = 3
+expon_rate = 0.5
+lognorm_mean = 2
+lognorm_std = 0.5
+
+# Values for which probabilities are calculated
+values = [10, 15, 8, 12]
+
+# Calculate probabilities for each distribution
+normal_probabilities = norm.pdf(values, loc=normal_mean, scale=normal_std)
+gamma_probabilities = gamma.pdf(values, gamma_shape, loc=0, scale=gamma_scale)
+expon_probabilities = expon.pdf(values, loc=0, scale=1/expon_rate)
+lognorm_probabilities = lognorm.pdf(values, lognorm_std, loc=0, scale=np.exp(lognorm_mean))
+
+# Print the calculated probabilities
+print("Normal Distribution Probabilities:")
+for val, prob in zip(values, normal_probabilities):
+    print(f"Value: {val}, Probability: {prob}")
+
+print("\nGamma Distribution Probabilities:")
+for val, prob in zip(values, gamma_probabilities):
+    print(f"Value: {val}, Probability: {prob}")
+
+print("\nExponential Distribution Probabilities:")
+for val, prob in zip(values, expon_probabilities):
+    print(f"Value: {val}, Probability: {prob}")
+
+print("\nLog-Normal Distribution Probabilities:")
+for val, prob in zip(values, lognorm_probabilities):
+    print(f"Value: {val}, Probability: {prob}")
 
 
