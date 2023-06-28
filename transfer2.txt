@@ -367,4 +367,19 @@ print("\nLog-Normal Distribution Probabilities:")
 for val, prob in zip(values, lognorm_probabilities):
     print(f"Value: {val}, Probability: {prob}")
 
+import scipy
+from scipy import stats
+from scipy.stats import norm
+import numpy as np
 
+arr = [-1.5,-1,-0.5,0,0.5,1,1.5]
+values = []
+
+
+
+for x in arr:
+    normal_probabilities = norm.pdf(x, loc=np.mean(arr), scale=np.std(arr))
+    print(normal_probabilities)
+    values.append(normal_probabilities)
+
+print("Sum of probabilities is " + str(np.sum(values)))
