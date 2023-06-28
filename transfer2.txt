@@ -260,3 +260,63 @@ ax_sec.set_ylabel('Secondary Y-axis')
 # Displaying the plot
 plt.show()
 
+-------
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+
+# Step 1: Import the necessary libraries
+
+# Step 2: Load the data from Excel
+data = pd.read_excel('path_to_your_excel_file.xlsx', sheet_name='sheet_name')
+
+# Step 3: Plot a histogram of the data
+sns.histplot(data=data, x='column_name', kde=True)
+plt.xlabel('Values')
+plt.ylabel('Frequency')
+plt.title('Histogram of Data')
+plt.show()
+
+# Step 4: Fit different distribution models and find the best fit
+distributions = [
+    'norm',  # Normal distribution
+    'expon',  # Exponential distribution
+    'gamma',  # Gamma distribution
+    'lognorm',  # Log-normal distribution
+]
+
+best_fit = None
+best_fit_params = {}
+best_fit_name = ''
+best_fit_aic = float('inf')
+
+for distribution in distributions:
+    # Fit the distribution to the data
+    params = getattr(stats, distribution).fit(data['column_name'])
+    
+    # Apply the Kolmogorov-Smirnov test to check the goodness of fit
+    _, p_value = stats.kstest(data['column_name'], distribution, args=params)
+    
+    # Calculate the AIC (Akaike Information Criterion)
+    aic = -2 * stats.loglikelihood(distribution, params, data['column_name']).sum() + 2 * len(params)
+    
+    # Check if this distribution has a better fit
+    if p_value > 0.05 and aic < best_fit_aic:
+        best_fit = getattr(stats, distribution)
+        best_fit_params = params
+        best_fit_name = distribution
+        best_fit_aic = aic
+
+# Step 5: Plot the best-fit distribution over the histogram
+x = pd.Series(best_fit.rvs(size=len(data['column_name']), *best_fit_params))
+
+sns.histplot(data=data, x='column_name', kde=True)
+sns.histplot(x, kde=True, color='r', label=best_fit_name)
+
+plt.xlabel('Values')
+plt.ylabel('Frequency')
+plt.title('Histogram with Best-Fit Distribution')
+plt.legend()
+plt.show()
+
