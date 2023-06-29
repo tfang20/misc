@@ -1,405 +1,184 @@
-creates vertical box plots that dynamically updates values
-import matplotlib.pyplot as plt
-
-# Custom values for the boxplots
-array1 = [1, 2, 3, 4, 5]
-array2 = [2, 3, 4, 5, 7]
-array3 = [3, 4, 5, 6, 8]
-
-# Creating the figure and axis
-fig, ax = plt.subplots()
-
-# Creating the boxplots
-boxplot = ax.boxplot([array1, array2, array3], vert=True, widths=0.5, patch_artist=True)
-
-# Customizing the boxplot colors
-colors = ['lightblue', 'lightblue', 'lightblue']
-for patch, color in zip(boxplot['boxes'], colors):
-    patch.set_facecolor(color)
-
-for i, box in enumerate(boxplot['boxes']):
-    # Get the vertices (coordinates) of the box
-    box_coords = box.get_path().vertices
-    
-    # Calculate the x-coordinate of the middle of the box
-    mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
-    
-    # Calculate the statistics for the current box plot
-    box_values = boxplot['medians'][i].get_ydata()
-    box_min = boxplot['caps'][2*i].get_ydata()[0]
-    box_max = boxplot['caps'][2*i + 1].get_ydata()[0]
-    
-    # Add value label for the top line
-    ax.text(mid_x + 0.3, box_max, f'{box_max:.1f}', color='black', fontsize=8, verticalalignment='center')
-    
-    # Add value label for the bottom line
-    ax.text(mid_x + 0.3, box_min, f'{box_min:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-    # Add value label for the middle line
-    ax.text(mid_x + 0.3, box_values[0], f'{box_values[0]:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-# Setting the y-axis limits and ticks
-ax.set_ylim(-5, 10)
-ax.set_yticks([i / 10 for i in range(-50, 110, 10)])
-ax.set_yticklabels([str(i / 10) for i in range(-50, 110, 10)])
-
-# Setting the x-axis label
-ax.set_xlabel('Box Plots')
-
-# Adding a title
-ax.set_title('Custom Vertical Box Plots with Value Labels for Top, Bottom, and Middle Lines')
-
-# Displaying the plot
-plt.show()
-
------------------------------------------------------------
-only graphs when array has values, if array = ["","","","",""] then it will not create a box plot
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Custom values for the boxplots
-array1 = [1, 2, 3, 4, 5]
-array2 = [3,4,5,6,7]
-array3 = [8,9,10,11,12]
-
-# Creating the figure and axis
-fig, ax = plt.subplots()
-
-# Creating the boxplots
-data = []
-
-if array1 and not any(val != "" for val in array2) and not any(val != "" for val in array3):
-    # Only array1 has values, arrays 2 and 3 are all empty
-    data.append(array1)
-
-elif array1 and array2 and not any(val != "" for val in array3):
-    # Array1 and array2 have values, array3 is all empty
-    data.append(array1)
-    data.append(array2)
-
-elif array1 and array2 and array3:
-    # All arrays have values
-    data.append(array1)
-    data.append(array2)
-    data.append(array3)
-
-if data:
-    boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
-
-    # Customizing the boxplot colors
-    colors = ['lightblue'] * len(data)
-    for patch, color in zip(boxplot['boxes'], colors):
-        patch.set_facecolor(color)
-
-    for i, box in enumerate(boxplot['boxes']):
-        if i < len(data):
-            # Get the vertices (coordinates) of the box
-            box_coords = box.get_path().vertices
-
-            # Calculate the x-coordinate of the middle of the box
-            mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
-
-            # Calculate the statistics for the current box plot
-            box_values = boxplot['medians'][i].get_ydata()
-            box_min = boxplot['caps'][2 * i].get_ydata()[0]
-            box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
-
-            # Add value label for the top line
-            ax.text(mid_x + 0.3, box_max, f'{box_max:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-            # Add value label for the bottom line
-            ax.text(mid_x + 0.3, box_min, f'{box_min:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-            # Add value label for the middle line
-            ax.text(mid_x + 0.3, box_values[0], f'{box_values[0]:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-# Setting the y-axis limits and ticks
-min_value = np.inf if not data else np.nanmin([np.nanmin(arr) for arr in data])
-max_value = -np.inf if not data else np.nanmax([np.nanmax(arr) for arr in data])
-ax.set_ylim(min_value, max_value)
-ax.set_yticks(np.linspace(min_value, max_value, num=6))
-
-# Setting the x-axis label
-ax.set_xlabel('Box Plots')
-
-# Adding a title
-ax.set_title('Custom Vertical Box Plots with Value Labels')
-
-# Displaying the plot
-plt.show()
-
----------------------------------------------------------------
-code to create secondary axis for outlier data - BROKEN
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Custom values for the box plots
-array1 = [1, 2, 3, 4, 5]
-array2 = [45, 47, 48, 50, 58]
-array3 = [1, 2, 3, 4, 5]
-
-# Creating the figure and primary axis
-fig, ax = plt.subplots()
-
-# Creating the boxplots
-data = []
-
-if array1 and not any(val != "" for val in array2) and not any(val != "" for val in array3):
-    # Only array1 has values, arrays 2 and 3 are all empty
-    data.append(array1)
-
-elif array1 and array2 and not any(val != "" for val in array3):
-    # Array1 and array2 have values, array3 is all empty
-    data.append(array1)
-    data.append(array2)
-
-elif array1 and array2 and array3:
-    # All arrays have values
-    data.append(array1)
-    data.append(array2)
-    data.append(array3)
-
-if data:
-    boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
-
-    # Customizing the boxplot colors
-    colors = ['lightblue'] * len(data)
-    for patch, color in zip(boxplot['boxes'], colors):
-        patch.set_facecolor(color)
-
-    for i, box in enumerate(boxplot['boxes']):
-        if i < len(data):
-            # Get the vertices (coordinates) of the box
-            box_coords = box.get_path().vertices
-
-            # Calculate the x-coordinate of the middle of the box
-            mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
-
-            # Calculate the statistics for the current box plot
-            box_values = boxplot['medians'][i].get_ydata()
-            box_min = boxplot['caps'][2 * i].get_ydata()[0]
-            box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
-
-            # Add value label for the top line
-            ax.text(mid_x + 0.3, box_max, f'{box_max:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-            # Add value label for the bottom line
-            ax.text(mid_x + 0.3, box_min, f'{box_min:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-            # Add value label for the middle line
-            ax.text(mid_x + 0.3, box_values[0], f'{box_values[0]:.1f}', color='black', fontsize=8, verticalalignment='center')
-
-    # Check if a secondary y-axis is needed
-    if len(data) > 1:
-        # Find the array with smaller values (array1 or array3) and assign it to the primary y-axis
-        primary_data = array1 if np.nanmax(array1) < np.nanmax(array3) else array3
-
-        # Create the secondary y-axis for array2 with larger values
-        ax_sec = ax.twinx()
-
-        # Plot array2 on the secondary y-axis
-        ax_sec.plot([], [])  # Dummy plot for the secondary y-axis to avoid overlapping with the primary y-axis
-
-        # Calculate the min and max values for the primary y-axis limits
-        primary_min_value = np.nanmin(primary_data)
-        primary_max_value = np.nanmax(primary_data)
-
-        # Setting the primary y-axis limits and ticks
-        ax.set_ylim(primary_min_value, primary_max_value)
-        ax.set_yticks(np.linspace(primary_min_value, primary_max_value, num=6))
-
-        # Calculate the min and max values for the secondary y-axis limits
-        secondary_min_value = np.nanmin(array2)
-        secondary_max_value = np.nanmax(array2)
-
-        # Setting the secondary y-axis limits and ticks
-        ax_sec.set_ylim(secondary_min_value, secondary_max_value)
-        ax_sec.set_yticks(np.linspace(secondary_min_value, secondary_max_value, num=6))
-
-        # Set the label for the secondary y-axis
-        ax_sec.set_ylabel('Secondary Y-axis')
-
-# Setting the x-axis label
-ax.set_xlabel('Box Plots')
-
-# Adding a title
-ax.set_title('Custom Vertical Box Plots with Value Labels')
-
-# Displaying the plot
-plt.show()
-
-----------------------------
-just secondary y
+this is my code. i want the y axis to automatically add more ticks if user zooms in on the graph
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-# Custom values for the box plots
-array1 = [1, 2, 3, 4, 5]
-array2 = [45, 47, 48, 50, 58]
-
-# Creating the figure and primary axis
-fig, ax = plt.subplots()
-
-# Creating the boxplots
-data = [array1, array2]
-
-boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
-
-# Create a secondary y-axis for the box plot with larger values
-ax_sec = ax.twinx()
-
-# Customize the appearance of the secondary y-axis
-ax_sec.spines['right'].set_visible(True)
-ax_sec.yaxis.set_label_position('right')
-ax_sec.yaxis.set_ticks_position('right')
-
-# Set the label for the secondary y-axis
-ax_sec.set_ylabel('Secondary Y-axis')
-
-# Displaying the plot
-plt.show()
-
--------
-
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy import stats
+import matplotlib.patches as mpatches
+import tkinter as tk
+from tkinter import ttk
 
-# Load the data from Excel
-data = pd.read_excel('path_to_your_excel_file.xlsx', sheet_name='sheet_name', skiprows=4)
+def charts():
+    file = pd.ExcelFile("volpath.1.xlsm")
 
-# Extract the relevant data from column C (assuming it's the third column)
-column_index = 2  # Replace with the actual column index (zero-based)
-relevant_data = data.iloc[:, column_index]
-
-# Remove missing or infinite values
-relevant_data = relevant_data.replace([np.inf, -np.inf], np.nan).dropna()
-
-# Plot a histogram of the data
-sns.histplot(data=relevant_data, kde=True)
-plt.xlabel('Values')
-plt.ylabel('Frequency')
-plt.title('Histogram of Data')
-plt.show()
-
-# Fit different distribution models and find the best fit
-distributions = [
-    'norm',  # Normal distribution
-    'expon',  # Exponential distribution
-    'gamma',  # Gamma distribution
-    'lognorm',  # Log-normal distribution
-]
-
-best_fit = None
-best_fit_params = {}
-best_fit_name = ''
-best_fit_aic = float('inf')
-
-for distribution in distributions:
-    # Fit the distribution to the data
-    params = getattr(stats, distribution).fit(relevant_data)
+    df = file.parse('Func_hide', header = None , skiprows=1, usecols="M:T", nrows = 3)
+    df2 = file.parse('Func_hide', header= None, skiprows=1, usecols="U:V", nrows = 3)
     
-    # Calculate the log-likelihood
-    log_likelihood = np.sum(getattr(stats, distribution).logpdf(relevant_data, *params))
+    roll1 = df2.iloc[0,:].tolist()
+    roll2 = df2.iloc[1,:].tolist()
+    roll3 = df2.iloc[2,:].tolist()
+
+    print(roll2)
+    global array1, array2, array3
+    array1 = df.iloc[0,3:].tolist()
+    array2 = df.iloc[1,3:].tolist()
+    array3 = df.iloc[2,3:].tolist()
+    combinedArr = array1 + array2 + array3
     
-    # Calculate the AIC (Akaike Information Criterion)
-    k = len(params)
-    n = len(relevant_data)
-    aic = -2 * log_likelihood + 2 * k
+
+    global chart1, chart2, chart3
+    chart1 = str(df.iloc[0,1]) + " " +str(df.iloc[0,2])
+    chart2 = str(df.iloc[1,1]) + " " +str(df.iloc[1,2])
+    chart3 = str(df.iloc[2,1]) + " " +str(df.iloc[2,2])
+
+    # Custom values for the boxplots
+    # array1 = [-0.5, -.45, 0.12, .24, .5]
+    # array2 = [1.7,4,5,5.9,7]
+    # array3 = [22,24,25,26,28]
+    # combinedArr = array1 + array2 + array3
+    # chart1, chart2, chart3 = "chart", "chart", "chart"
+
+    plt.ion()
+
+    # Creating the figure and axis
+    fig, ax = plt.subplots()
+    fig.set_size_inches(10,8)
+
+   
+    # Creating the boxplots
+    data = []
+
+    if array1 and not any(val != "" for val in array2) and not any(val != "" for val in array3):
+        # Only array1 has values, arrays 2 and 3 are all empty
+        data.append(array1)
+
+    elif array1 and array2 and not any(val != "" for val in array3):
+        # Array1 and array2 have values, array3 is all empty
+        data.append(array1)
+        data.append(array2)
+
+    elif array1 and array2 and array3:
+        # All arrays have values
+        data.append(array1)
+        data.append(array2)
+        data.append(array3)
+
+    if data:
+        boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
+
+        # Customizing the boxplot colors
+        colors = ['lightblue'] * len(data)
+        for patch, color in zip(boxplot['boxes'], colors):
+            patch.set_facecolor(color)
+
+        for i, box in enumerate(boxplot['boxes']):
+            if i < len(data):
+                # Get the vertices (coordinates) of the box
+                box_coords = box.get_path().vertices
+
+                # Calculate the x-coordinate of the middle of the box
+                mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
+
+                # Calculate the statistics for the current box plot
+                box_values = boxplot['medians'][i].get_ydata()
+                box_min = boxplot['caps'][2 * i].get_ydata()[0]
+                box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
+
+                # Add value labels for the 30d Low/High
+                quartile_values = np.percentile(data[i], [25,75])
+
+                # if not box_min / quartile_values[0] > 0.95 or not  box_values[0] / quartile_values[0]  > 0.95:
+                #     ax.text(mid_x + 0.3, quartile_values[0], f'30d Low {quartile_values[0]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+                # elif box_min / quartile_values[0] > 0.95:
+                #     ax.text(mid_x + 0.55, quartile_values[0], f'30d Low {quartile_values[0]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+                # elif quartile_values[0] / box_values[0] > 0.95:
+                #     ax.text(mid_x + 0.55, quartile_values[0], f'30d Low {quartile_values[0]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+
+                ax.text(mid_x + 0.5, quartile_values[0], f'30d Low {quartile_values[0]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+                
+                # if not quartile_values[1] / box_max > 0.95 or not box_values[0] / quartile_values[1] > 0.95:
+                #     ax.text(mid_x + 0.3, quartile_values[1], f'30d High {quartile_values[1]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+                # elif quartile_values[1] / box_max > 0.95:
+                #     ax.text(mid_x + 0.55, quartile_values[1], f'30d High {quartile_values[1]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+                # elif box_values[0] / quartile_values[1] > 0.95:
+                #     ax.text(mid_x + 0.55, quartile_values[1], f'30d High {quartile_values[1]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+
+                ax.text(mid_x + 0.5, quartile_values[1], f'30d Low {quartile_values[1]:.3f}', color='blue', fontsize=6, verticalalignment='center')
+
+                # Add value label for the 60d High
+                ax.text(mid_x + 0.3, box_max, f'60d High {box_max:.3f}', color='green', fontsize=6, verticalalignment='center')
+
+                # Add value label for the 60d Low
+                ax.text(mid_x + 0.3, box_min, f'60d Low {box_min:.3f}', color='green', fontsize=6, verticalalignment='center')
+
+                # Add value label for the Current Vol
+                ax.text(mid_x + 0.3, box_values[0], f'Curr. Vol {box_values[0]:.3f}', color='red', fontsize=6, verticalalignment='center')
+    # Adding legend
+    green = mpatches.Patch(color= 'green', label = '60 Day')
+    red = mpatches.Patch(color='red', label = "Curr. Vol")
+    blue = mpatches.Patch(color='blue', label = "30 Day")
+    plt.legend(handles=[green,red,blue])
+
+    # Setting the y-axis limits and ticks
+    min_value = np.inf if not data else np.nanmin([np.nanmin(arr) for arr in data])
+    max_value = -np.inf if not data else np.nanmax([np.nanmax(arr) for arr in data])
+    ax.set_ylim(min_value * .5, max_value * 1.5 )
+    ax.set_yticks(np.linspace(min_value - 1, max_value + 1, num=10))
+
+
+
+    # Setting the x-axis label
+    ax.set_xlabel(chart1 + " / " + chart2 + " / " + chart3)
+
+    # Adding a title
+    ax.set_title('Volpath')
+
     
-    # Check if this distribution has a better fit
-    if aic < best_fit_aic:
-        best_fit = getattr(stats, distribution)
-        best_fit_params = params
-        best_fit_name = distribution
-        best_fit_aic = aic
+    root = tk.Tk()
+    root.title("Volpath")
 
-# Plot the best-fit distribution over the histogram
-sns.histplot(data=relevant_data, kde=True)
-x = pd.Series(best_fit.rvs(size=len(relevant_data), *best_fit_params))
-sns.histplot(x, kde=True, color='r', label=best_fit_name)
+    table = ttk.Treeview(root)
+    table["columns"] = ("array1", "array2", "array3")
+    table.column("#0", width=100, minwidth=50)
+    table.column("array1", width=100, minwidth=100)
+    table.column("array2", width=100, minwidth=100)
+    table.column("array3", width=100, minwidth=100)
 
-plt.xlabel('Values')
-plt.ylabel('Frequency')
-plt.title('Histogram with Best-Fit Distribution')
-plt.legend()
-plt.show()
-
-
-import numpy as np
-from scipy.stats import norm, gamma, expon, lognorm
-
-# Parameters for the distributions
-normal_mean = 5
-normal_std = 2
-gamma_shape = 2
-gamma_scale = 3
-expon_rate = 0.5
-lognorm_mean = 2
-lognorm_std = 0.5
-
-# Values for which probabilities are calculated
-values = [10, 15, 8, 12]
-
-# Calculate probabilities for each distribution
-normal_probabilities = norm.pdf(values, loc=normal_mean, scale=normal_std)
-gamma_probabilities = gamma.pdf(values, gamma_shape, loc=0, scale=gamma_scale)
-expon_probabilities = expon.pdf(values, loc=0, scale=1/expon_rate)
-lognorm_probabilities = lognorm.pdf(values, lognorm_std, loc=0, scale=np.exp(lognorm_mean))
-
-# Print the calculated probabilities
-print("Normal Distribution Probabilities:")
-for val, prob in zip(values, normal_probabilities):
-    print(f"Value: {val}, Probability: {prob}")
-
-print("\nGamma Distribution Probabilities:")
-for val, prob in zip(values, gamma_probabilities):
-    print(f"Value: {val}, Probability: {prob}")
-
-print("\nExponential Distribution Probabilities:")
-for val, prob in zip(values, expon_probabilities):
-    print(f"Value: {val}, Probability: {prob}")
-
-print("\nLog-Normal Distribution Probabilities:")
-for val, prob in zip(values, lognorm_probabilities):
-    print(f"Value: {val}, Probability: {prob}")
-
-import scipy
-from scipy import stats
-from scipy.stats import norm
-import numpy as np
-
-arr = [-1.5,-1,-0.5,0,0.5,1,1.5]
-values = []
+    table.heading("#0", text="Contract")
+    table.heading("array1", text=chart1)
+    table.heading("array2", text=chart2)
+    table.heading("array3", text=chart3)
+    
+    if not any(val != "" for val in array3):
+        array3= ["","","","",""]
+    if not any(val != "" for val in array2):
+        array2 = ["","","","",""]
 
 
+    index = ""
+    for i in range(len(array1) + 2):
+        if i == 0:
+            index = "60d Low"
+        if i == 1:
+            index = "30d Low"
+        if i == 2:
+            index = "Curr. Vol"
+        if i == 3:
+            index = "30d High"
+        if i == 4:
+            index = "60d High"
+        if i == 5:
+            index = "10d Rolling"
+        if i == 6:
+            index = "30d Rolling"
+        if i <= 4:
+            table.insert("", "end", text=index, values=(round(array1[i],3), round(array2[i],3), round((array3[i]),3)))
+        else:
+          table.insert("", "end", text=index, values=(round(roll1[i-5],3), round(roll2[i-5],3), round((roll3[i-5]),3)))
 
-for x in arr:
-    normal_probabilities = norm.pdf(x, loc=np.mean(arr), scale=np.std(arr))
-    print(normal_probabilities)
-    values.append(normal_probabilities)
+    table.pack(padx=10, pady=10)
+    
+    plt.show()
+    root.mainloop()
 
-print("Sum of probabilities is " + str(np.sum(values)))
+charts()
 
-import numpy as np
-from scipy.stats import norm
-
-arr = [-1.5, -1, -0.5, 0, 0.5, 1, 1.5]
-values = []
-
-# Calculate probabilities for the array of values in the normal distribution using the PDF
-probabilities = norm.pdf(arr, loc=np.mean(arr), scale=np.std(arr))
-
-# Print the probabilities for each value
-for prob in probabilities:
-    print(prob)
-    values.append(prob)
-
-# Sum of probabilities
-total_probability = np.sum(values)
-
-# Print the sum of probabilities
-print("Sum of Probabilities:", total_probability)
