@@ -352,3 +352,46 @@ def charts():
     root.mainloop()
 
 charts()
+
+
+Sub IterateFilteredTable()
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim rng As Range
+    Dim rowCount As Long
+    Dim currentRow As Long
+    Dim previousRow As Long
+    
+    ' Set the worksheet and table references
+    Set ws = ThisWorkbook.Worksheets("Sheet1") ' Update with your worksheet name
+    Set tbl = ws.ListObjects("Table1") ' Update with your table name
+    
+    ' Filter the table (assuming you have applied filters)
+    tbl.Range.AutoFilter
+    
+    ' Get the visible range of the table
+    Set rng = tbl.Range.SpecialCells(xlCellTypeVisible)
+    
+    ' Get the row count
+    rowCount = rng.Rows.Count
+    
+    ' Loop through the visible rows
+    For currentRow = 2 To rowCount ' Assuming the table has headers and starts from row 2
+        ' Save the current row number
+        previousRow = currentRow - 1
+        
+        ' Perform your desired operations with the row numbers
+        ' For example, display them in the immediate window
+        Debug.Print "Current Row: " & currentRow & ", Previous Row: " & previousRow
+        
+        ' Continue with other processing...
+    Next currentRow
+    
+    ' Clear the filter
+    tbl.Range.AutoFilter Field:=1 ' Update the field number based on your filter criteria
+    
+    ' Clean up objects
+    Set rng = Nothing
+    Set tbl = Nothing
+    Set ws = Nothing
+End Sub
