@@ -1,3 +1,56 @@
+
+Sub CreateStackedColumnChart()
+    Dim ws As Worksheet
+    Dim cht As ChartObject
+    Dim rngData As Range
+    Dim chtTitle As String
+    
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your actual sheet name
+    
+    ' Set the range for the chart data
+    Set rngData = ws.Range("E3:K7")
+    
+    ' Set the chart title
+    chtTitle = ws.Range("E1").Value
+    
+    ' Add a new chart object to the worksheet
+    Set cht = ws.ChartObjects.Add(Left:=100, Width:=400, Top:=100, Height:=300)
+    
+    ' Set the chart type to stacked column
+    cht.Chart.ChartType = xlColumnStacked
+    
+    ' Set the chart data source
+    cht.Chart.SetSourceData rngData
+    
+    ' Add data labels to the chart
+    cht.Chart.ApplyDataLabels Type:=xlDataLabelsShowValue
+    
+    ' Set the x-axis to display at the bottom
+    cht.Chart.Axes(xlCategory).HasTitle = True
+    cht.Chart.Axes(xlCategory).AxisTitle.Text = ""
+    cht.Chart.Axes(xlCategory).TickLabels.Position = xlTickLabelPositionLow
+    
+    ' Rename the y-axis
+    cht.Chart.Axes(xlValue).HasTitle = True
+    cht.Chart.Axes(xlValue).AxisTitle.Text = "Price"
+    
+    ' Hide the grid lines
+    cht.Chart.Axes(xlValue).HasMajorGridlines = False
+    cht.Chart.Axes(xlValue).HasMinorGridlines = False
+    
+    ' Link the chart title to cell E1
+    cht.Chart.HasTitle = True
+    cht.Chart.ChartTitle.Text = "=" & ws.Name & "!" & ws.Range("E1").Address
+    
+End Sub
+
+
+
+
+
+
+
 this is my code. i want the y axis to automatically add more ticks if user zooms in on the graph
 
 import matplotlib.pyplot as plt
