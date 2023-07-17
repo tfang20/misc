@@ -1,1 +1,24 @@
 in excel, i have columns of data: date, x, y. the dates are in 3 clusters: june 2023, july 2023, august 2023. i want to create a chart in excel using either regular excel or vba to display a scatter plot of x vs y. i want the x vs y relationship in the scatter to be broken down by month. basically, it should look like three graphs in one. the x axis resets to 0 per month. so, it will be x vs y for june 2023, then immediately x vs y for july 2023, then immediately x vs y for august 2023. the x should reset per month. how do i do this
+
+
+To create a scatter plot in Excel that displays the relationship between x and y values broken down by month, you can follow these steps:
+
+Step 1: Organize your data
+Ensure that your data is organized in columns, with the first column containing the dates, the second column containing the x values, and the third column containing the y values.
+
+Step 2: Insert a scatter plot
+Select the range of data you want to include in the scatter plot, including the dates, x values, and y values. Then, go to the "Insert" tab in Excel, click on "Scatter" in the "Charts" section, and choose the scatter plot type you prefer. Excel will insert a basic scatter plot chart on your worksheet.
+
+Step 3: Modify the chart
+Right-click on the chart and select "Select Data" from the context menu. In the "Select Data Source" dialog box, click on the "Add" button under the "Legend Entries (Series)" section.
+
+Step 4: Specify series name and values
+In the "Edit Series" dialog box, enter a series name for the first month (e.g., "June 2023") in the "Series name" field. For the "Series X values," select the dates corresponding to that month. For the "Series Y values," select the corresponding y values. Click "OK" to close the dialog box.
+
+Repeat Step 3 and Step 4 for the other two months (July 2023 and August 2023), specifying the appropriate series names, X values, and Y values.
+
+Step 5: Adjust the axis
+Right-click on the X-axis of the chart and select "Format Axis" from the context menu. In the "Axis Options" pane, change the "Minimum" value to 0 to reset the X-axis for each month. Click "Close" to apply the changes.
+
+Step 6: Customize the chart
+You can further customize the chart by adding titles, labels, adjusting colors, and applying other formatting options as desired.
