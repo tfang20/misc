@@ -1,24 +1,50 @@
-in excel, i have columns of data: date, x, y. the dates are in 3 clusters: june 2023, july 2023, august 2023. i want to create a chart in excel using either regular excel or vba to display a scatter plot of x vs y. i want the x vs y relationship in the scatter to be broken down by month. basically, it should look like three graphs in one. the x axis resets to 0 per month. so, it will be x vs y for june 2023, then immediately x vs y for july 2023, then immediately x vs y for august 2023. the x should reset per month. how do i do this
+this is my code in python. i get an error "http.client.InvalidURL: URL can't contain control characters."
 
+"""
+This sample code pulls ending storage from a specified start report date to a end report date.
+report_start and report_end date parameters can be modified. 
 
-To create a scatter plot in Excel that displays the relationship between x and y values broken down by month, you can follow these steps:
+"""
 
-Step 1: Organize your data
-Ensure that your data is organized in columns, with the first column containing the dates, the second column containing the x values, and the third column containing the y values.
+import urllib.request, urllib.parse, urllib.error, requests, io, json, http.client
+import pandas as pd
+import time as t
+from datetime import datetime, date, time, timedelta
 
-Step 2: Insert a scatter plot
-Select the range of data you want to include in the scatter plot, including the dates, x values, and y values. Then, go to the "Insert" tab in Excel, click on "Scatter" in the "Charts" section, and choose the scatter plot type you prefer. Excel will insert a basic scatter plot chart on your worksheet.
+headers = {
+    # Copy and paste API Key below. API Key can be found on the API Portal under profile information
+    'api-key: 123456789'
+}
 
-Step 3: Modify the chart
-Right-click on the chart and select "Select Data" from the context menu. In the "Select Data Source" dialog box, click on the "Add" button under the "Legend Entries (Series)" section.
+params = urllib.parse.urlencode({
+        # Request parameters, the latest report date is provided if not included in parameters
+        'items': 'endingStorage',
+        'limit': '2000', 
+        'offset': '0',
+        'format': 'json',
+    })
+print(str(params))
+# Report start and end dates can be modified below
+report_start = date(year=2016,month=4,day=1)
+report_end = date(year=2023,month=7,day=18)
+current_date = report_start
 
-Step 4: Specify series name and values
-In the "Edit Series" dialog box, enter a series name for the first month (e.g., "June 2023") in the "Series name" field. For the "Series X values," select the dates corresponding to that month. For the "Series Y values," select the corresponding y values. Click "OK" to close the dialog box.
+data = []
+while current_date <= report_end:
+    conn = http.client.HTTPSConnection('api.genscape.com')
+    url = 'https://urldefense.com/v3/__https://api.genscape.com/natgas/supply-demand/v1/weekly-forward?reportDate='+str(current_date)+'&*s__;Kysl!!O9lNpA!kZvH6zDB_uLGc962votvNV6Ddmxpigow9V_QXUaoTjDJHb-i_xOxMmnrXmhWgsx3NgTkl67VYWjqxProLA$ ' +params
+    conn.request("GET",url,"{body}",headers)
+    response = conn.getresponse()
+    
+    decoded_data = response.read()
+    decoded_data2 = json.loads(decoded_data)
+    decoded_data3 = decoded_data2['data']
+    data = data + decoded_data3
+    recvd = len(decoded_data3)
+    print("API returned " + str(recvd) + " rows")
+    t.sleep(2.1)
+    current_date += timedelta(days=7)
 
-Repeat Step 3 and Step 4 for the other two months (July 2023 and August 2023), specifying the appropriate series names, X values, and Y values.
+df = pd.DataFrame(data)
 
-Step 5: Adjust the axis
-Right-click on the X-axis of the chart and select "Format Axis" from the context menu. In the "Axis Options" pane, change the "Minimum" value to 0 to reset the X-axis for each month. Click "Close" to apply the changes.
-
-Step 6: Customize the chart
-You can further customize the chart by adding titles, labels, adjusting colors, and applying other formatting options as desired.
+df.to_csv('test.csv',index=False)
