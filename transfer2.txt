@@ -1,30 +1,29 @@
-# Assuming your pandas DataFrame is called 'df'
-# And your existing Excel file is named 'existing_file.xlsx'
-
-# Load the DataFrame
-df = pd.DataFrame({
-    'Column1': [1, 2, 3],
-    'Column2': ['A', 'B', 'C'],
-})
-
-# Load the existing Excel file
-file_path = 'existing_file.xlsx'
-book = load_workbook(file_path)
-
-# Select the first worksheet
-sheet = book.worksheets[0]
-
-# Clear the contents of the first worksheet
-for row in sheet:
-    for cell in row:
-        cell.value = None
-
-# Get the dimensions of the DataFrame
-rows, cols = df.shape
-
-# Write the DataFrame to the first worksheet, starting from cell A1
-for r in dataframe_to_rows(df, index=False, header=True):
-    sheet.append(r)
-
-# Save the modified Excel file
-book.save(file_path)
+Sub GetAPIDataAndPaste()
+    Dim url As String
+    Dim httpRequest As Object
+    Dim responseData As String
+    Dim destinationSheet As Worksheet
+    
+    ' Set the URL of the API endpoint
+    url = "YOUR_API_URL_HERE"
+    
+    ' Set the destination sheet where you want to paste the data
+    Set destinationSheet = ThisWorkbook.Sheets("Sheet1")
+    
+    ' Create a new instance of the XML HTTP Request object
+    Set httpRequest = CreateObject("MSXML2.XMLHTTP")
+    
+    ' Make the GET request to the API
+    httpRequest.Open "GET", url, False
+    httpRequest.send
+    
+    ' Get the response data
+    responseData = httpRequest.responseText
+    
+    ' Paste the data into the destination sheet
+    destinationSheet.Range("A1").Value = responseData
+    
+    ' Clean up the objects
+    Set httpRequest = Nothing
+    Set destinationSheet = Nothing
+End Sub
