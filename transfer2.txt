@@ -2,7 +2,11 @@ Sub GetAPIDataAndPaste()
     Dim url As String
     Dim httpRequest As Object
     Dim responseData As String
+    Dim dataRows() As String
+    Dim dataArray() As String
     Dim destinationSheet As Worksheet
+    Dim rowNum As Long
+    Dim colNum As Integer
     
     ' Set the URL of the API endpoint
     url = "YOUR_API_URL_HERE"
@@ -20,8 +24,33 @@ Sub GetAPIDataAndPaste()
     ' Get the response data
     responseData = httpRequest.responseText
     
-    ' Paste the data into the destination sheet
-    destinationSheet.Range("A1").Value = responseData
+    ' Split the response data into rows based on the delimiter ";"
+    dataRows = Split(responseData, ";")
+    
+    ' Clear the destination sheet before pasting new data
+    destinationSheet.Cells.ClearContents
+    
+    ' Initialize the row number
+    rowNum = 1
+    
+    ' Loop through each row of data and split into columns
+    For Each rowItem In dataRows
+        ' Split the row data into an array based on the delimiter ","
+        dataArray = Split(rowItem, ",")
+        
+        ' Initialize the column number
+        colNum = 1
+        
+        ' Loop through each column of data in the row
+        For Each colItem In dataArray
+            ' Paste the data into the destination sheet
+            destinationSheet.Cells(rowNum, colNum).Value = colItem
+            colNum = colNum + 1
+        Next colItem
+        
+        ' Move to the next row
+        rowNum = rowNum + 1
+    Next rowItem
     
     ' Clean up the objects
     Set httpRequest = Nothing
