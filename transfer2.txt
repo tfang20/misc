@@ -1,50 +1,30 @@
-this is my code in python. i get an error "http.client.InvalidURL: URL can't contain control characters."
+# Assuming your pandas DataFrame is called 'df'
+# And your existing Excel file is named 'existing_file.xlsx'
 
-"""
-This sample code pulls ending storage from a specified start report date to a end report date.
-report_start and report_end date parameters can be modified. 
+# Load the DataFrame
+df = pd.DataFrame({
+    'Column1': [1, 2, 3],
+    'Column2': ['A', 'B', 'C'],
+})
 
-"""
+# Load the existing Excel file
+file_path = 'existing_file.xlsx'
+book = load_workbook(file_path)
 
-import urllib.request, urllib.parse, urllib.error, requests, io, json, http.client
-import pandas as pd
-import time as t
-from datetime import datetime, date, time, timedelta
+# Select the first worksheet
+sheet = book.worksheets[0]
 
-headers = {
-    # Copy and paste API Key below. API Key can be found on the API Portal under profile information
-    'api-key: 123456789'
-}
+# Clear the contents of the first worksheet
+for row in sheet:
+    for cell in row:
+        cell.value = None
 
-params = urllib.parse.urlencode({
-        # Request parameters, the latest report date is provided if not included in parameters
-        'items': 'endingStorage',
-        'limit': '2000', 
-        'offset': '0',
-        'format': 'json',
-    })
-print(str(params))
-# Report start and end dates can be modified below
-report_start = date(year=2016,month=4,day=1)
-report_end = date(year=2023,month=7,day=18)
-current_date = report_start
+# Get the dimensions of the DataFrame
+rows, cols = df.shape
 
-data = []
-while current_date <= report_end:
-    conn = http.client.HTTPSConnection('api.genscape.com')
-    url = 'https://urldefense.com/v3/__https://api.genscape.com/natgas/supply-demand/v1/weekly-forward?reportDate='+str(current_date)+'&*s__;Kysl!!O9lNpA!kZvH6zDB_uLGc962votvNV6Ddmxpigow9V_QXUaoTjDJHb-i_xOxMmnrXmhWgsx3NgTkl67VYWjqxProLA$ ' +params
-    conn.request("GET",url,"{body}",headers)
-    response = conn.getresponse()
-    
-    decoded_data = response.read()
-    decoded_data2 = json.loads(decoded_data)
-    decoded_data3 = decoded_data2['data']
-    data = data + decoded_data3
-    recvd = len(decoded_data3)
-    print("API returned " + str(recvd) + " rows")
-    t.sleep(2.1)
-    current_date += timedelta(days=7)
+# Write the DataFrame to the first worksheet, starting from cell A1
+for r in dataframe_to_rows(df, index=False, header=True):
+    sheet.append(r)
 
-df = pd.DataFrame(data)
-
-df.to_csv('test.csv',index=False)
+# Save the modified Excel file
+book.save(file_path)
