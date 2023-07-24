@@ -1,218 +1,36 @@
-Sub CallPythonScript()
-    Dim scriptPath As String
-    Dim pythonPath As String
-    Dim cmd As String
-    
-    ' Set the path to the Python script
-    scriptPath = "C:\path\to\your\python_script.py"
-    
-    ' Set the path to the Python interpreter
-    pythonPath = "C:\path\to\python.exe"
-    
-    ' Build the command to execute the Python script
-    cmd = pythonPath & " " & scriptPath
-    
-    ' Call the Python script using the Shell function
-    Shell cmd, vbNormalFocus
-End Sub
+import os
 
+def rename_files_in_folder(folder_path, new_prefix):
+    # Check if the folder path exists
+    if not os.path.exists(folder_path):
+        print("Folder path does not exist.")
+        return
 
-Sub SaveAndCloseExcel_CallPython()
-    ' Save the file
-    ThisWorkbook.Save
-    
-    ' Close Excel
-    Application.Quit
-    
-    ' Call the Python script
-    Dim scriptPath As String
-    Dim pythonPath As String
-    Dim cmd As String
-    
-    ' Set the path to the Python script
-    scriptPath = "C:\path\to\your\python_script.py"
-    
-    ' Set the path to the Python interpreter
-    pythonPath = "C:\path\to\python.exe"
-    
-    ' Build the command to execute the Python script
-    cmd = pythonPath & " " & scriptPath
-    
-    ' Call the Python script using the Shell function
-    Shell cmd, vbNormalFocus
-End Sub
+    # Get a list of files in the folder
+    files = os.listdir(folder_path)
 
----------------
-in python, i have two arrays, array1 = [1,2,3,4,5] and array2 = [11,12,13,14,15]. i want to create box plots vertical box plots with the two arrays. that is, vertical boxplot1 for array1 and vertical boxplot2 for array2, both on the same pyplot figure. for boxplot1 i want it plotted against the primary y axis on the right. for boxplot2, i want the code to create a secondary y axis and for boxplot2 to be plotted against that axis. to reiterate, boxplot1 against primary y, boxplot2 against secondary y
-import matplotlib.pyplot as plt
+    # Iterate over the files and rename them
+    for filename in files:
+        # Skip directories
+        if os.path.isdir(os.path.join(folder_path, filename)):
+            continue
+        
+        # Get the file extension
+        file_extension = os.path.splitext(filename)[1]
 
-array1 = [1, 2, 3, 4, 5]
-array2 = [11, 12, 13, 14, 15]
+        # Create the new file name with the desired prefix and the original extension
+        new_name = f"{new_prefix}_{filename}"
 
-fig, ax1 = plt.subplots()
+        # Get the full paths of the old and new files
+        old_path = os.path.join(folder_path, filename)
+        new_path = os.path.join(folder_path, new_name)
 
-# Creating boxplot1 against the primary y-axis
-bp1 = ax1.boxplot(array1, vert=True)
-ax1.set_ylabel('Array 1')
+        # Rename the file
+        os.rename(old_path, new_path)
 
-# Creating a secondary y-axis
-ax2 = ax1.twinx()
+        print(f"Renamed '{filename}' to '{new_name}'")
 
-# Creating boxplot2 against the secondary y-axis
-bp2 = ax2.boxplot(array2, vert=True)
-ax2.set_ylabel('Array 2')
-
-plt.show()
-
-
-
-
-
---------------
-i have 3 arrays in python each of length 5. i want code to output the arrays as a table in a popup window, with labels for each index. for example, all the arrays will be output on the popup table, and next to the values for each array there should be the index 0,1,2,3, and 4 respectively.
-import tkinter as tk
-from tkinter import ttk
-
-def show_array_table(array1, array2, array3):
-    root = tk.Tk()
-    root.title("Arrays Table")
-
-    table = ttk.Treeview(root)
-    table["columns"] = ("array1", "array2", "array3")
-    table.column("#0", width=50, minwidth=50)
-    table.column("array1", width=100, minwidth=100)
-    table.column("array2", width=100, minwidth=100)
-    table.column("array3", width=100, minwidth=100)
-
-    table.heading("#0", text="Index")
-    table.heading("array1", text="Array 1")
-    table.heading("array2", text="Array 2")
-    table.heading("array3", text="Array 3")
-
-    for i in range(len(array1)):
-        index = str(i)
-        table.insert("", "end", text=index, values=(array1[i], array2[i], array3[i]))
-
-    table.pack(padx=10, pady=10)
-    root.mainloop()
-
-# Example arrays
-array1 = [1, 2, 3, 4, 5]
-array2 = [11, 12, 13, 14, 15]
-array3 = [21, 22, 23, 24, 25]
-
-# Show the arrays as a table in a popup window
-show_array_table(array1, array2, array3)
-
------------
-i have this code in python. since array 3 has values so much larger than array1 and array2, i want the code to create a secondary y axis on the right and graph array3 box plot - or boxplot3 - against the secondary y axis. to reiterate, boxplot3 should be agains the secondary y axis, not the primary; array1 and array2 are plotted against left, array3 is plotted against right
-
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-import numpy as np
-import pandas as pd
-import matplotlib.patches as mpatches
-from io import BytesIO
-import xlsxwriter
-
-file = pd.ExcelFile(r"C:\Users\tfang03\OneDrive - BMO Financial Group\Desktop\volpath\step 2 - filtering.xlsm")
-df = file.parse('Func_hide', header=None, skiprows=1, usecols="M:T", nrows=3)
-
-array1 = [-0.5, -0.45, 0.12, 0.24, 0.5]
-array2 = [1.7, 4, 5, 5.9, 7]
-array3 = [22, 24, 25, 26, 28]
-combinedArr = array1 + array2 + array3
-chart1, chart2, chart3 = "chart", "chart", "chart"
-
-fig, ax = plt.subplots()
-fig.set_size_inches(10, 8)
-
-data = []
-y_labels = ['Array 1', 'Array 2', 'Array 3']
-
-if array1:
-    data.append(array1)
-
-if array2:
-    data.append(array2)
-
-if array3:
-    data.append(array3)
-    ax2 = ax.twinx()
-    ax2.spines['right'].set_position(('outward', 60))
-    ax2.spines['right'].set_visible(True)
-    ax2.set_frame_on(True)
-    ax2.patch.set_visible(False)
-    ax2.yaxis.set_label_coords(1.1, 0.5)
-    ax2.set_ylabel('Array 3')
-
-if data:
-    boxplot = ax.boxplot(data, vert=True, widths=0.5, patch_artist=True)
-
-    colors = ['lightblue'] * len(data)
-    for patch, color in zip(boxplot['boxes'], colors):
-        patch.set_facecolor(color)
-
-    for i, box in enumerate(boxplot['boxes']):
-        if i < len(data):
-            box_coords = box.get_path().vertices
-            mid_x = (box_coords[0, 0] + box_coords[2, 0]) / 2
-
-            quartile_values = np.percentile(data[i], [25, 75])
-            ax.text(mid_x + 0.3, quartile_values[0], f'30d Low {quartile_values[0]:.2f}', color='blue', fontsize=6,
-                    verticalalignment='center')
-            ax.text(mid_x + 0.3, quartile_values[1], f'30d Low {quartile_values[1]:.2f}', color='blue', fontsize=6,
-                    verticalalignment='center')
-
-            box_min = boxplot['caps'][2 * i].get_ydata()[0]
-            box_max = boxplot['caps'][2 * i + 1].get_ydata()[0]
-            ax.text(mid_x + 0.3, box_max, f'60d High {box_max:.2f}', color='green', fontsize=6,
-                    verticalalignment='center')
-            ax.text(mid_x + 0.3, box_min, f'60d Low {box_min:.2f}', color='green', fontsize=6,
-                    verticalalignment='center')
-
-            box_values = boxplot['medians'][i].get_ydata()
-            ax.text(mid_x + 0.3, box_values[0], f'Curr. Vol {box_values[0]:.2f}', color='red', fontsize=6,
-                    verticalalignment='center')
-
-green = mpatches.Patch(color='green', label='60 Day')
-red = mpatches.Patch(color='red', label="Curr. Vol")
-blue = mpatches.Patch(color='blue', label="30 Day")
-plt.legend(handles=[green, red, blue])
-
-min_value = np.inf if not data else np.nanmin([np.nanmin(arr) for arr in data])
-max_value = -np.inf if not data else np.nanmax([np.nanmax(arr) for arr in data])
-ax.set_ylim(min_value * 1.2, max_value * 1.2)
-ax.set_yticks(np.linspace(min_value, max_value, num=12))
-
-ax.set_xlabel(chart1 + " / " + chart2 + " / " + chart3)
-ax.set_title('Volpath')
-
-plt.show()
-
-
-Sub CreateBoxPlot()
-    Dim ws As Worksheet
-    Dim chartObj As ChartObject
-    Dim rngData As Range
-    
-    ' Set the worksheet to the desired sheet
-    Set ws = ThisWorkbook.Sheets("Sheet1")
-    
-    ' Set the range of data for the box plot
-    Set rngData = ws.Range("A1:F10")  ' Replace with your specific range
-    
-    ' Create a new chart object on the worksheet
-    Set chartObj = ws.ChartObjects.Add(Left:=100, Top:=100, Width:=400, Height:=300)
-    
-    ' Set the chart type to box plot
-    chartObj.Chart.ChartType = xlBoxwhisker
-    
-    ' Set the source data range for the box plot
-    chartObj.Chart.SetSourceData rngData
-    
-    ' Set other chart properties as needed
-    ' ...
-End Sub
-
-
+# Example usage
+folder_path = "/path/to/your/folder"  # Replace this with the actual path to your folder
+new_prefix = "new_file"  # Replace this with your desired new prefix
+rename_files_in_folder(folder_path, new_prefix)
