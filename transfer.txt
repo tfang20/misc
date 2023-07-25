@@ -1,1 +1,37 @@
-in python, i have a dataframe that is made from an api call. the dataframe is called df_merged. the dataframe should have 13 columns, named according to the alphabet (a, b, c, etc.). however, the dataframe is only 1 singular column; that is, there is only 1 column in the dataframe instead of 13, and the first value in the dataframe is a,b,c,d,e,etc. each row in the dataframe also contains 13 values, in accordance to the expected 13 columns. i want to expand the dataframe so that it is actually 13 columns. the values in each row are separated by commas, so i want to delimit by "," to expand the dataframe and its subsequent values into 13 columns.
+import openpyxl
+from openpyxl.styles import Alignment, Border, Side, Font
+
+def format_excel_file(filename):
+    wb = openpyxl.load_workbook(filename)
+    ws = wb.active
+
+    # Bold the first row
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    # Center all cells
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    # Add a thick border around the first row
+    border = Border(top=Side(style='thick'), right=Side(style='thick'), bottom=Side(style='thick'), left=Side(style='thick'))
+    for cell in ws[1]:
+        cell.border = border
+
+    # Add a regular bottom border under the row when col C contains the text "here"
+    for row in ws.iter_rows(min_row=2, min_col=3, max_col=3):
+        for cell in row:
+            if cell.value == "here":
+                cell.border = Border(bottom=Side(style='thin'))
+
+    # Add a regular border to the right of column F
+    for row in ws.iter_rows(min_col=6, max_col=6):
+        for cell in row:
+            cell.border = Border(right=Side(style='thin'))
+
+    # Save the changes to the file
+    wb.save("formatted_" + filename)
+
+# Usage:
+format_excel_file("file.xlsx")
