@@ -1,37 +1,29 @@
-import openpyxl
-from openpyxl.styles import Alignment, Border, Side, Font
+this is my code. when it bottom borders the rows, it is skipping the cells in col D and col I because there is already a right border on the column: 
+run_count = 0
+model_count = 0
+first = 1
+for row in ws.iter_rows(min_row=2):
+    if first == 1:
+        if run_count == 7:
+            for cell in row:
+                cell.border = openpyxl.styles.Border(bottom = openpyxl.styles.Side(style='dashed'))
+                run_count = 0
+                first = 0
+    if run_count == 8:
+            for cell in row:
+                cell.border = openpyxl.styles.Border(bottom = openpyxl.styles.Side(style='dashed'))
+                run_count = 0
+    if model_count == 23:
+        for cell2 in row:
+            cell2.border = openpyxl.styles.Border(bottom = openpyxl.styles.Side(style='thin'))
+    run_count += 1
+    model_count += 1
+# Add a regular border to the right of column D
+for row in ws.iter_rows(min_row = 2, min_col=4, max_col=4):
+    for cell in row:
+        cell.border = Border(right=Side(style='thin'))
 
-def format_excel_file(filename):
-    wb = openpyxl.load_workbook(filename)
-    ws = wb.active
-
-    # Bold the first row
-    for cell in ws[1]:
-        cell.font = Font(bold=True)
-
-    # Center all cells
-    for row in ws.iter_rows():
-        for cell in row:
-            cell.alignment = Alignment(horizontal='center', vertical='center')
-
-    # Add a thick border around the first row
-    border = Border(top=Side(style='thick'), right=Side(style='thick'), bottom=Side(style='thick'), left=Side(style='thick'))
-    for cell in ws[1]:
-        cell.border = border
-
-    # Add a regular bottom border under the row when col C contains the text "here"
-    for row in ws.iter_rows(min_row=2, min_col=3, max_col=3):
-        for cell in row:
-            if cell.value == "here":
-                cell.border = Border(bottom=Side(style='thin'))
-
-    # Add a regular border to the right of column F
-    for row in ws.iter_rows(min_col=6, max_col=6):
-        for cell in row:
-            cell.border = Border(right=Side(style='thin'))
-
-    # Save the changes to the file
-    wb.save("formatted_" + filename)
-
-# Usage:
-format_excel_file("file.xlsx")
+# Add a regular border to the right of column I
+for row in ws.iter_rows(min_row = 2, min_col=9, max_col=9):
+    for cell in row:
+        cell.border = Border(right=Side(style='thin'))
