@@ -1,28 +1,39 @@
-import openpyxl
+Option Explicit
 
-def add_right_and_bottom_borders(file_path, sheet_name, start_row):
-    workbook = openpyxl.load_workbook(file_path)
-    sheet = workbook[sheet_name]
-
-    for row_num in range(start_row, sheet.max_row + 1):
-        for col_num in range(1, sheet.max_column + 1):
-            cell = sheet.cell(row=row_num, column=col_num)
-
-            # Check if the cell has a right border
-            if cell.border.right.style:
-                # Add right and bottom borders to the cell
-                cell.border = openpyxl.styles.Border(
-                    left=cell.border.left,
-                    right=cell.border.right,
-                    top=cell.border.top,
-                    bottom=openpyxl.styles.Side(border_style="thin"),
-                )
-
-    workbook.save(file_path)
-
-# Example usage:
-excel_file_path = "path/to/your/excel_file.xlsx"
-sheet_name = "Sheet1"  # Replace with the name of your sheet
-start_row = 2  # Start checking from row 2 (skip header row if any)
-
-add_right_and_bottom_borders(excel_file_path, sheet_name, start_row)
+Sub GetAPIDataAndPaste()
+    Dim apiLink As String
+    apiLink = "YOUR_API_LINK_HERE" ' Replace with your actual API link
+    
+    Dim httpReq As Object
+    Set httpReq = CreateObject("WinHttp.WinHttpRequest.5.1")
+    
+    ' Send a GET request to the API
+    httpReq.Open "GET", apiLink, False
+    httpReq.send
+    
+    ' Check if the request was successful (status code 200)
+    If httpReq.Status = 200 Then
+        Dim response As String
+        response = httpReq.responseText
+        
+        ' Split the response into an array using the comma as the delimiter
+        Dim dataArray As Variant
+        dataArray = Split(response, ",")
+        
+        ' Specify the worksheet where you want to paste the data
+        Dim ws As Worksheet
+        Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your desired sheet name
+        
+        ' Clear the existing data in the worksheet
+        ws.UsedRange.Clear
+        
+        ' Paste the data into the worksheet
+        ws.Range("A1").Resize(UBound(dataArray) + 1, 1).Value = Application.WorksheetFunction.Transpose(dataArray)
+        
+        MsgBox "Data has been successfully retrieved and pasted.", vbInformation
+    Else
+        MsgBox "Error: Unable to retrieve data from the API.", vbExclamation
+    End If
+    
+    Set httpReq = Nothing
+End Sub
