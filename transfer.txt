@@ -1,39 +1,22 @@
-Option Explicit
+Sub PasteApiResponse()
+    Dim responseText As String
+    responseText = 'Your API response.text here'
 
-Sub GetAPIDataAndPaste()
-    Dim apiLink As String
-    apiLink = "YOUR_API_LINK_HERE" ' Replace with your actual API link
-    
-    Dim httpReq As Object
-    Set httpReq = CreateObject("WinHttp.WinHttpRequest.5.1")
-    
-    ' Send a GET request to the API
-    httpReq.Open "GET", apiLink, False
-    httpReq.send
-    
-    ' Check if the request was successful (status code 200)
-    If httpReq.Status = 200 Then
-        Dim response As String
-        response = httpReq.responseText
-        
-        ' Split the response into an array using the comma as the delimiter
-        Dim dataArray As Variant
-        dataArray = Split(response, ",")
-        
-        ' Specify the worksheet where you want to paste the data
-        Dim ws As Worksheet
-        Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace "Sheet1" with your desired sheet name
-        
-        ' Clear the existing data in the worksheet
-        ws.UsedRange.Clear
-        
-        ' Paste the data into the worksheet
-        ws.Range("A1").Resize(UBound(dataArray) + 1, 1).Value = Application.WorksheetFunction.Transpose(dataArray)
-        
-        MsgBox "Data has been successfully retrieved and pasted.", vbInformation
-    Else
-        MsgBox "Error: Unable to retrieve data from the API.", vbExclamation
-    End If
-    
-    Set httpReq = Nothing
+    Dim dataArray() As String
+    dataArray = Split(responseText, vbCr) ' Split rows based on vbCR delimiter
+
+    Dim rowIndex As Long
+    Dim colIndex As Long
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your target sheet name
+
+    ' Loop through the rows and columns and paste the data
+    For rowIndex = LBound(dataArray) To UBound(dataArray)
+        Dim rowItems() As String
+        rowItems = Split(dataArray(rowIndex), ",") ' Split row items based on comma delimiter
+
+        For colIndex = LBound(rowItems) To UBound(rowItems)
+            ws.Cells(rowIndex + 1, colIndex + 1).Value = rowItems(colIndex)
+        Next colIndex
+    Next rowIndex
 End Sub
