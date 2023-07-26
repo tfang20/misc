@@ -1,27 +1,39 @@
-Sub PasteApiResponse()
-    Dim responseText As String
-    responseText = 'Your API response.text here'
+Option Explicit
 
-    Dim dataArray() As String
-    dataArray = Split(responseText, vbCr) ' Split rows based on vbCR delimiter
+Declare PtrSafe Function URLDownloadToFile Lib "urlmon" Alias _
+    "URLDownloadToFileA" (ByVal pCaller As Long, ByVal szURL As String, _
+    ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
 
-    Dim rowIndex As Long
-    Dim colIndex As Long
-    Dim ws As Worksheet
-    Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your target sheet name
-
-    ' Loop through the rows and columns and paste the data
-    rowIndex = 1 ' Start from the first row of the worksheet
-    For Each rowItem In dataArray
-        Dim rowItems() As String
-        rowItems = Split(rowItem, ",") ' Split row items based on comma delimiter
-
-        colIndex = 1 ' Reset column index for each row
-        For Each cellItem In rowItems
-            ws.Cells(rowIndex, colIndex).Value = cellItem
-            colIndex = colIndex + 1 ' Move to the next column
-        Next cellItem
-
-        rowIndex = rowIndex + 1 ' Move to the next row
-    Next rowItem
+Sub DownloadAndCopySheet()
+    Dim downloadURL As String
+    Dim downloadedFile As String
+    Dim wbDownloaded As Workbook
+    
+    ' Define the URL to download the file from
+    downloadURL = "http://www.test.com/test.xlsx"
+    
+    ' Define the path for the downloaded file
+    downloadedFile = Environ("USERPROFILE") & "\Downloads\test.xlsx"
+    
+    ' Download the file from the URL to the Downloads folder
+    If URLDownloadToFile(0, downloadURL, downloadedFile, 0, 0) = 0 Then
+        ' File downloaded successfully, now open it and copy the sheet
+        On Error Resume Next
+        Set wbDownloaded = Workbooks.Open(downloadedFile)
+        On Error GoTo 0
+        
+        If Not wbDownloaded Is Nothing Then
+            ' Copy sheet 1 from the downloaded workbook to the current workbook
+            wbDownloaded.Sheets(1).Copy Before:=ThisWorkbook.Sheets(1)
+            
+            ' Close the downloaded workbook without saving changes
+            wbDownloaded.Close False
+            
+            MsgBox "Sheet copied successfully.", vbInformation
+        Else
+            MsgBox "Failed to open the downloaded file.", vbExclamation
+        End If
+    Else
+        MsgBox "Failed to download the file.", vbExclamation
+    End If
 End Sub
