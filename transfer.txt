@@ -11,12 +11,17 @@ Sub PasteApiResponse()
     Set ws = ThisWorkbook.Sheets("Sheet1") ' Change "Sheet1" to your target sheet name
 
     ' Loop through the rows and columns and paste the data
-    For rowIndex = LBound(dataArray) To UBound(dataArray)
+    rowIndex = 1 ' Start from the first row of the worksheet
+    For Each rowItem In dataArray
         Dim rowItems() As String
-        rowItems = Split(dataArray(rowIndex), ",") ' Split row items based on comma delimiter
+        rowItems = Split(rowItem, ",") ' Split row items based on comma delimiter
 
-        For colIndex = LBound(rowItems) To UBound(rowItems)
-            ws.Cells(rowIndex + 1, colIndex + 1).Value = rowItems(colIndex)
-        Next colIndex
-    Next rowIndex
+        colIndex = 1 ' Reset column index for each row
+        For Each cellItem In rowItems
+            ws.Cells(rowIndex, colIndex).Value = cellItem
+            colIndex = colIndex + 1 ' Move to the next column
+        Next cellItem
+
+        rowIndex = rowIndex + 1 ' Move to the next row
+    Next rowItem
 End Sub
