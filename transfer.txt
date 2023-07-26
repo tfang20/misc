@@ -1,13 +1,10 @@
 Option Explicit
 
-Declare PtrSafe Function URLDownloadToFile Lib "urlmon" Alias _
-    "URLDownloadToFileA" (ByVal pCaller As Long, ByVal szURL As String, _
-    ByVal szFileName As String, ByVal dwReserved As Long, ByVal lpfnCB As Long) As Long
-
 Sub DownloadAndCopySheet()
     Dim downloadURL As String
     Dim downloadedFile As String
     Dim wbDownloaded As Workbook
+    Dim httpReq As Object
     
     ' Define the URL to download the file from
     downloadURL = "http://www.test.com/test.xlsx"
@@ -15,8 +12,24 @@ Sub DownloadAndCopySheet()
     ' Define the path for the downloaded file
     downloadedFile = Environ("USERPROFILE") & "\Downloads\test.xlsx"
     
+    ' Create a new WinHttpRequest object
+    Set httpReq = CreateObject("WinHttp.WinHttpRequest.5.1")
+    
     ' Download the file from the URL to the Downloads folder
-    If URLDownloadToFile(0, downloadURL, downloadedFile, 0, 0) = 0 Then
+    httpReq.Open "GET", downloadURL, False
+    httpReq.send
+    
+    ' Check if the download was successful
+    If httpReq.Status = 200 Then
+        ' Save the downloaded content to a local file
+        With CreateObject("ADODB.Stream")
+            .Type = 1 ' Binary
+            .Open
+            .Write httpReq.responseBody
+            .SaveToFile downloadedFile, 2 ' Overwrite
+            .Close
+        End With
+        
         ' File downloaded successfully, now open it and copy the sheet
         On Error Resume Next
         Set wbDownloaded = Workbooks.Open(downloadedFile)
