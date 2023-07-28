@@ -1,52 +1,16 @@
-Option Explicit
-
-Sub DownloadAndCopySheet()
-    Dim downloadURL As String
-    Dim downloadedFile As String
-    Dim wbDownloaded As Workbook
-    Dim httpReq As Object
+Sub MergeColumnsTwoAtATime()
+    Dim ws As Worksheet
+    Dim lastColumn As Long
+    Dim col As Long
     
-    ' Define the URL to download the file from
-    downloadURL = "http://www.test.com/test.xlsx"
+    ' Change "Sheet1" to the name of your worksheet
+    Set ws = ThisWorkbook.Worksheets("Sheet1")
     
-    ' Define the path for the downloaded file
-    downloadedFile = Environ("USERPROFILE") & "\Downloads\test.xlsx"
+    ' Find the last column in row 3
+    lastColumn = ws.Cells(3, ws.Columns.Count).End(xlToLeft).Column
     
-    ' Create a new WinHttpRequest object
-    Set httpReq = CreateObject("WinHttp.WinHttpRequest.5.1")
-    
-    ' Download the file from the URL to the Downloads folder
-    httpReq.Open "GET", downloadURL, False
-    httpReq.send
-    
-    ' Check if the download was successful
-    If httpReq.Status = 200 Then
-        ' Save the downloaded content to a local file
-        With CreateObject("ADODB.Stream")
-            .Type = 1 ' Binary
-            .Open
-            .Write httpReq.responseBody
-            .SaveToFile downloadedFile, 2 ' Overwrite
-            .Close
-        End With
-        
-        ' File downloaded successfully, now open it and copy the sheet
-        On Error Resume Next
-        Set wbDownloaded = Workbooks.Open(downloadedFile)
-        On Error GoTo 0
-        
-        If Not wbDownloaded Is Nothing Then
-            ' Copy sheet 1 from the downloaded workbook to the current workbook
-            wbDownloaded.Sheets(1).Copy Before:=ThisWorkbook.Sheets(1)
-            
-            ' Close the downloaded workbook without saving changes
-            wbDownloaded.Close False
-            
-            MsgBox "Sheet copied successfully.", vbInformation
-        Else
-            MsgBox "Failed to open the downloaded file.", vbExclamation
-        End If
-    Else
-        MsgBox "Failed to download the file.", vbExclamation
-    End If
+    ' Loop through the columns two at a time and merge them
+    For col = 1 To lastColumn Step 2
+        ws.Range(ws.Cells(3, col), ws.Cells(3, col + 1)).Merge
+    Next col
 End Sub
