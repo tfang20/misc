@@ -1,44 +1,41 @@
-Sub CopyWorksheetFromAPIWithHeaders()
+Sub DownloadXLSFile()
+    ' Replace "YOUR_API_URL_HERE" with the actual API endpoint that returns the XLS file
     Dim apiURL As String
-    Dim dataWorkbook As Workbook
-    Dim historyDataSheet As Worksheet
-    Dim existingWorkbook As Workbook
-    Dim http As Object
-    Dim response() As Byte
+    apiURL = "YOUR_API_URL_HERE"
     
-    ' Replace "apiURL" with the actual API endpoint that returns the Excel file
-    apiURL = "https://api.example.com/get_excel_data"
+    ' Replace "YOUR_SPECIFIC_PATH_HERE" with the desired download path on your computer
+    Dim savePath As String
+    savePath = "YOUR_SPECIFIC_PATH_HERE\filename.xls"
     
-    ' Set the existing workbook (where you want to paste the data)
-    Set existingWorkbook = ThisWorkbook
+    ' Create a new instance of MSXML2.XMLHTTP object
+    Dim xmlHTTP As Object
+    Set xmlHTTP = CreateObject("MSXML2.XMLHTTP")
     
-    ' Create a new HTTP request object
-    Set http = CreateObject("MSXML2.XMLHTTP")
+    ' Open the URL and make the API call
+    xmlHTTP.Open "GET", apiURL, False
+    xmlHTTP.send
     
-    ' Make the API request with headers (replace "API_KEY" with your actual API key)
-    http.Open "GET", apiURL, False
-    http.setRequestHeader "Authorization", "Bearer API_KEY" ' Add any other required headers here
-    http.send
-    
-    ' Check if the API request was successful (status 200 indicates success)
-    If http.Status = 200 Then
-        ' Get the binary response data
-        response = http.responseBody
+    ' Check if the API call was successful (Status code 200)
+    If xmlHTTP.Status = 200 Then
+        ' Create a new ADODB.Stream object to save the file
+        Dim stream As Object
+        Set stream = CreateObject("ADODB.Stream")
         
-        ' Create a new workbook and paste the response content into it
-        Set dataWorkbook = CreateObject("Excel.Application").Workbooks.Add
-        dataWorkbook.ActiveSheet.Cells(1, 1).CopyFromRecordset CreateObject("ADODB.Stream").Open
-        dataWorkbook.ActiveSheet.UsedRange.Copy ' Copy the data from the new workbook
+        ' Set the stream type to binary
+        stream.Type = 1
         
-        ' Set the worksheet you want to copy from the downloaded workbook
-        Set historyDataSheet = dataWorkbook.Worksheets(1) ' Assuming the data is in the first sheet
+        ' Open the stream and write the API response (XLS file) to it
+        stream.Open
+        stream.Write xmlHTTP.responseBody
+        stream.SaveToFile savePath, 2 ' 2 = adSaveCreateOverWrite
         
-        ' Copy the entire "HistoryData" worksheet from the downloaded workbook and paste into the existing workbook
-        historyDataSheet.Copy After:=existingWorkbook.Sheets(existingWorkbook.Sheets.Count)
+        ' Close the stream and release objects
+        stream.Close
+        Set stream = Nothing
+        Set xmlHTTP = Nothing
         
-        ' Close the downloaded workbook without saving changes
-        dataWorkbook.Close SaveChanges:=False
+        MsgBox "XLS file downloaded successfully to " & savePath
     Else
-        MsgBox "API request failed. Status code: " & http.Status
+        MsgBox "Failed to download the XLS file. Status code: " & xmlHTTP.Status
     End If
 End Sub
