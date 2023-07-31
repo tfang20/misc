@@ -1,16 +1,16 @@
-Sub MergeColumnsTwoAtATime()
-    Dim ws As Worksheet
-    Dim lastColumn As Long
-    Dim col As Long
-    
-    ' Change "Sheet1" to the name of your worksheet
-    Set ws = ThisWorkbook.Worksheets("Sheet1")
-    
-    ' Find the last column in row 3
-    lastColumn = ws.Cells(3, ws.Columns.Count).End(xlToLeft).Column
-    
-    ' Loop through the columns two at a time and merge them
-    For col = 1 To lastColumn Step 2
-        ws.Range(ws.Cells(3, col), ws.Cells(3, col + 1)).Merge
-    Next col
-End Sub
+import requests
+
+headers = {
+    'accept': '*/*',
+    'appkey': 'MrfrmmHMdINXhDluzsvd',
+    'Authorization': 'Bearer eyJraWQiOiJTUEdMQkRvbWFpbiIsIng1dCI6InkxX0ZTTjl6UXJOSG1kRDh3Z0pOVzFmVDI0OCIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwczovL2xvZ2luLnNwZ2xvYmFsLmNvbTo0NDMvb2F1dGgyIiwiYXVkIjoiUGxhdHRzQVBJUGxhdGZvcm0iLCJleHAiOjE2OTA4MTk4MzksImp0aSI6ImhXbTcwM2lqLWRpcnJTUnQ1MlRsT0EiLCJpYXQiOjE2OTA4MTYyMzksInN1YiI6InRoZW8uZmFuZ0BibW8uY29tIiwidWlkIjoidGhlby5mYW5nQGJtby5jb20iLCJkaXN0cmlidXRvclBsYXRmb3JtIjoiQVBJIiwiY291bnRyeSI6IlVuaXRlZCBTdGF0ZXMiLCJyZXNTcnZBdHRyLVN0YXRpYyI6IlJFU09VUkNFQ09OU1QiLCJFbWFpbCI6InRoZW8uZmFuZ0BibW8uY29tIiwiRmlyc3ROYW1lIjoiVGhlbyIsIkdyb3VwcyI6Ik5VTEwiLCJzZXNzaW9uSWQiOiI4OGQ1ZjNkN2E2ZjQyYWI2MWY2MTNiNDk0OTdiYjA2OWRhNWQxN2JjYTRhODE2Y2Q2Nzg3ODdlY2MwMjY5MTkzIiwiTGFzdE5hbWUiOiJGYW5nIiwiU1BfU1NPX0dST1VQUyI6Ik5VTEwiLCJjbGllbnQiOiJQTF9BUElfUGxhdGZvcm0iLCJzY29wZSI6WyJQbGF0dHNBUElQbGF0Zm9ybS5hcGkiXSwiZG9tYWluIjoiU1BHTEJEb21haW4ifQ.SkwcYz3Lno25UYOA4NDZ_bYFgDFqm8IQTniJmQEIslrl9XAF5BEJZ_RmMDBWpAhsB23XSTDln_3u-Z5FTpKIpHzhopLotcdCdFLeCA773qwZUF7gU44TjhZri2YpvRoFcFkU1vslh40MTtnbsRz8Lwyu5uyxOeB2o8sKYgtd5YM0X7fE3f7JViN55BOA3WnAS7gJaJphWB426tkd51KfSO3pzSkFfLdjan4cdCVOsBYsbNWN0vHW_npaZaF_ptQq5z08vHJGK4LUDqiQgztXgf3UbGd2RD4yYln14cfvjSdAAL2EunqKcejcqu4JRG8vpPkoHfKr3pPc8oJbKG8YAg',
+}
+
+response = requests.get(
+    'https://api.platts.com/news-insights/v1/content/ff863021-20b4-4b7b-b932-b13d0873b65e',
+    headers=headers, verify=False
+)
+
+output = open("test.xls", 'wb')
+output.write(response.content)
+output.close()
