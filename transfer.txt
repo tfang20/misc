@@ -1,1 +1,27 @@
 in vba, i have code that pulls an excel from an api. that is, the api request returns an xls file that can be downloaded. i want to copy a worksheet called "HistoryData" and paste into the existing workbook the vba code is in, all without actually downloading the returned xls file. show me
+
+Sub CopyWorksheetFromAPI()
+    Dim apiURL As String
+    Dim dataWorkbook As Workbook
+    Dim historyDataSheet As Worksheet
+    Dim existingWorkbook As Workbook
+    
+    ' Replace "apiURL" with the actual API endpoint that returns the Excel file
+    apiURL = "https://api.example.com/get_excel_data"
+    
+    ' Download the Excel file from the API into a new workbook
+    Workbooks.Open apiURL
+    Set dataWorkbook = ActiveWorkbook
+    
+    ' Set the worksheet you want to copy from the downloaded workbook
+    Set historyDataSheet = dataWorkbook.Worksheets("HistoryData")
+    
+    ' Set the existing workbook (where you want to paste the data)
+    Set existingWorkbook = ThisWorkbook
+    
+    ' Copy the "HistoryData" worksheet from the downloaded workbook and paste into the existing workbook
+    historyDataSheet.Copy After:=existingWorkbook.Sheets(existingWorkbook.Sheets.Count)
+    
+    ' Close the downloaded workbook without saving changes
+    dataWorkbook.Close SaveChanges:=False
+End Sub
