@@ -1,27 +1,40 @@
-in vba, i have code that pulls an excel from an api. that is, the api request returns an xls file that can be downloaded. i want to copy a worksheet called "HistoryData" and paste into the existing workbook the vba code is in, all without actually downloading the returned xls file. show me
-
-Sub CopyWorksheetFromAPI()
+Sub CopyWorksheetFromAPIWithHeaders()
     Dim apiURL As String
     Dim dataWorkbook As Workbook
     Dim historyDataSheet As Worksheet
     Dim existingWorkbook As Workbook
+    Dim http As Object
     
     ' Replace "apiURL" with the actual API endpoint that returns the Excel file
     apiURL = "https://api.example.com/get_excel_data"
     
-    ' Download the Excel file from the API into a new workbook
-    Workbooks.Open apiURL
-    Set dataWorkbook = ActiveWorkbook
-    
-    ' Set the worksheet you want to copy from the downloaded workbook
-    Set historyDataSheet = dataWorkbook.Worksheets("HistoryData")
-    
     ' Set the existing workbook (where you want to paste the data)
     Set existingWorkbook = ThisWorkbook
     
-    ' Copy the "HistoryData" worksheet from the downloaded workbook and paste into the existing workbook
-    historyDataSheet.Copy After:=existingWorkbook.Sheets(existingWorkbook.Sheets.Count)
+    ' Create a new HTTP request object
+    Set http = CreateObject("MSXML2.XMLHTTP")
     
-    ' Close the downloaded workbook without saving changes
-    dataWorkbook.Close SaveChanges:=False
+    ' Make the API request with headers (replace "API_KEY" with your actual API key)
+    http.Open "GET", apiURL, False
+    http.setRequestHeader "Authorization", "Bearer API_KEY" ' Add any other required headers here
+    http.send
+    
+    ' Check if the API request was successful (status 200 indicates success)
+    If http.Status = 200 Then
+        ' Create a new workbook and copy the response content to it
+        Set dataWorkbook = Workbooks.Add
+        dataWorkbook.Activate
+        ActiveSheet.PasteSpecial Format:="Text", Link:=False, DisplayAsIcon:=False
+        
+        ' Set the worksheet you want to copy from the downloaded workbook
+        Set historyDataSheet = dataWorkbook.Worksheets("Sheet1") ' Replace "Sheet1" with the actual sheet name
+        
+        ' Copy the entire "HistoryData" worksheet from the downloaded workbook and paste into the existing workbook
+        historyDataSheet.Copy After:=existingWorkbook.Sheets(existingWorkbook.Sheets.Count)
+        
+        ' Close the downloaded workbook without saving changes
+        dataWorkbook.Close SaveChanges:=False
+    Else
+        MsgBox "API request failed. Status code: " & http.Status
+    End If
 End Sub
