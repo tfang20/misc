@@ -4,6 +4,7 @@ Sub CopyWorksheetFromAPIWithHeaders()
     Dim historyDataSheet As Worksheet
     Dim existingWorkbook As Workbook
     Dim http As Object
+    Dim response() As Byte
     
     ' Replace "apiURL" with the actual API endpoint that returns the Excel file
     apiURL = "https://api.example.com/get_excel_data"
@@ -21,13 +22,17 @@ Sub CopyWorksheetFromAPIWithHeaders()
     
     ' Check if the API request was successful (status 200 indicates success)
     If http.Status = 200 Then
+        ' Get the binary response data
+        response = http.responseBody
+        
         ' Create a new workbook and copy the response content to it
         Set dataWorkbook = Workbooks.Add
         dataWorkbook.Activate
-        ActiveSheet.PasteSpecial Format:="Text", Link:=False, DisplayAsIcon:=False
+        ActiveSheet.Cells(1, 1).CopyFromRecordset CreateObject("ADODB.Stream").Open
+        ActiveSheet.PasteSpecial xlPasteValues
         
         ' Set the worksheet you want to copy from the downloaded workbook
-        Set historyDataSheet = dataWorkbook.Worksheets("Sheet1") ' Replace "Sheet1" with the actual sheet name
+        Set historyDataSheet = dataWorkbook.Worksheets(1) ' Assuming the data is in the first sheet
         
         ' Copy the entire "HistoryData" worksheet from the downloaded workbook and paste into the existing workbook
         historyDataSheet.Copy After:=existingWorkbook.Sheets(existingWorkbook.Sheets.Count)
