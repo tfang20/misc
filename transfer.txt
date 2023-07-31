@@ -25,11 +25,10 @@ Sub CopyWorksheetFromAPIWithHeaders()
         ' Get the binary response data
         response = http.responseBody
         
-        ' Create a new workbook and copy the response content to it
-        Set dataWorkbook = Workbooks.Add
-        dataWorkbook.Activate
-        ActiveSheet.Cells(1, 1).CopyFromRecordset CreateObject("ADODB.Stream").Open
-        ActiveSheet.PasteSpecial xlPasteValues
+        ' Create a new workbook and paste the response content into it
+        Set dataWorkbook = CreateObject("Excel.Application").Workbooks.Add
+        dataWorkbook.ActiveSheet.Cells(1, 1).CopyFromRecordset CreateObject("ADODB.Stream").Open
+        dataWorkbook.ActiveSheet.UsedRange.Copy ' Copy the data from the new workbook
         
         ' Set the worksheet you want to copy from the downloaded workbook
         Set historyDataSheet = dataWorkbook.Worksheets(1) ' Assuming the data is in the first sheet
