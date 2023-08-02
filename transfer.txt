@@ -1,1 +1,23 @@
 in python, i have a dataframe. column one is labels, and so are rows 1,2,3,4, and 5. In row 6 and 7 (not including column 1), i want to color the cells based on their numeric value. if the value is 0, it will not be colored. the more positive the value is, the more green it should be. the more negative the value is, the more red it should be. for example, a cell of -2 and a cell of -1 will both be red, but -2 will be a darker red; likewise, cell of 1 and cell of 2 will both be green, but 2 will be darker green. after the coloring is done, i want the dataframe converted to html.
+import pandas as pd
+
+# Assuming you have a DataFrame called 'df' with labels in column 1 and rows 1 to 5
+# and numerical values in rows 6 and 7 (excluding column 1)
+
+# Create a DataFrame style function to apply custom coloring
+def color_cells(val):
+    if pd.notnull(val) and val != 0:
+        if val > 0:
+            return 'background-color: rgba(0, 255, 0, {});'.format(abs(val)/5)
+        else:
+            return 'background-color: rgba(255, 0, 0, {});'.format(abs(val)/5)
+    else:
+        return ''
+
+# Apply the style function to the desired range (rows 6 and 7)
+styled_df = df.style.applymap(color_cells, subset=pd.IndexSlice[6:7, df.columns[1:]])
+
+# Convert the styled DataFrame to HTML
+styled_html = styled_df.to_html()
+
+# Now 'styled_html' contains the HTML representation of your DataFrame with custom cell coloring
