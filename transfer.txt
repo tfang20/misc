@@ -1,31 +1,23 @@
 import pandas as pd
-from premailer import transform
 
-# Assuming you have a DataFrame called 'df' with labels in column 1 and rows 1 to 5
-# and numerical values in rows 7 to 9 (excluding column 1)
+# Assuming you have 4 dataframes named df1, df2, df3, and df4
 
-# Create a DataFrame style function to apply custom coloring
-def color_cells(val):
-    if pd.notnull(val) and val != 0:
-        if val > 0:
-            return 'background-color: rgba(0, 255, 0, {});'.format(abs(val)/5)
-        else:
-            return 'background-color: rgba(255, 0, 0, {});'.format(abs(val)/5)
-    else:
-        return ''
+# Create an empty list to store the columns with the text "here" in row "period"
+selected_columns = []
 
-# Apply the style function to the DataFrame (for visualization)
-styled_df = df.style.applymap(color_cells, subset=pd.IndexSlice[7:10, df.columns[1:]])
+# Function to check if the "period" row contains the text "here" and save the column if true
+def check_period_contains_here(df):
+    if "period" in df.index and df.loc["period"].str.contains("here").any():
+        selected_columns.extend(df.columns[df.loc["period"] == "here"].tolist())
 
-# Convert the styled DataFrame to HTML with CSS styles
-styled_html_with_css = styled_df.to_html()
+# Call the function for each dataframe
+check_period_contains_here(df1)
+check_period_contains_here(df2)
+check_period_contains_here(df3)
+check_period_contains_here(df4)
 
-# Convert the CSS styles to inline styles using premailer
-styled_html_with_inline_styles = transform(styled_html_with_css)
+# Create a new dataframe with the selected columns
+result_df = pd.concat([df1[selected_columns], df2[selected_columns], df3[selected_columns], df4[selected_columns]], axis=1)
 
-# Now 'styled_html_with_inline_styles' contains the HTML representation of your DataFrame
-# with custom cell coloring for rows 7 to 9 and inline CSS styles
-
-# Use 'styled_html_with_inline_styles' in the email body
-mail = createitem(0)
-mail.htmlbody = styled_html_with_inline_styles
+# Return the new dataframe
+result_df
