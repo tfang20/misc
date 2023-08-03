@@ -1,23 +1,36 @@
-import pandas as pd
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
-# Assuming you have 4 dataframes named df1, df2, df3, and df4
+def send_html_email(sender_email, sender_password, recipient_email, subject, html_content):
+    # Set up the SMTP server
+    smtp_server = "your_smtp_server_address"
+    smtp_port = 587  # Change to the appropriate port if needed
 
-# Create an empty list to store the columns with the text "here" in row "period"
-selected_columns = []
+    # Create a MIMEText object to hold the HTML content
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = recipient_email
+    msg['Subject'] = subject
 
-# Function to check if the "period" row contains the text "here" and save the column if true
-def check_period_contains_here(df):
-    if "period" in df.index and df.loc["period"].str.contains("here").any():
-        selected_columns.extend(df.columns[df.loc["period"] == "here"].tolist())
+    # Attach the HTML content to the email
+    msg.attach(MIMEText(html_content, 'html'))
 
-# Call the function for each dataframe
-check_period_contains_here(df1)
-check_period_contains_here(df2)
-check_period_contains_here(df3)
-check_period_contains_here(df4)
+    # Start the SMTP session and send the email
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+        print("Email sent successfully!")
+    except Exception as e:
+        print("Error sending email:", str(e))
 
-# Create a new dataframe with the selected columns
-result_df = pd.concat([df1[selected_columns], df2[selected_columns], df3[selected_columns], df4[selected_columns]], axis=1)
+# Usage example:
+sender_email = "your_email@example.com"
+sender_password = "your_email_password"
+recipient_email = "recipient@example.com"
+subject = "Test HTML Email"
+html_content = "<h1>Hello from Python!</h1><p>This is an HTML email.</p>"
 
-# Return the new dataframe
-result_df
+send_html_email(sender_email, sender_password, recipient_email, subject, html_content)
