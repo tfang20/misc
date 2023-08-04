@@ -1,36 +1,28 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+Sub FilterDatesByMonths()
+    Dim ws As Worksheet
+    Dim dateRange As Range
+    Dim cell As Range
+    Dim filterCriteria As String
+    
+    ' Set the worksheet reference
+    Set ws = ThisWorkbook.Worksheets("Sheet1") ' Change to your worksheet name
+    
+    ' Set the range containing your dates (adjust the range as needed)
+    Set dateRange = ws.Range("A2:A100") ' Change to your date range
+    
+    ' Clear existing filters
+    dateRange.AutoFilter
+    
+    ' Build the filter criteria for January and February
+    filterCriteria = "1,2"
+    
+    ' Apply the filter
+    dateRange.AutoFilter Field:=1, Criteria1:=Split(filterCriteria, ","), Operator:=xlFilterValues
+    
+    ' Loop through visible cells and do something (replace this with your desired action)
+    For Each cell In dateRange.SpecialCells(xlCellTypeVisible)
+        ' Do something with the visible cell, e.g., copy to another location
+        ' Example: cell.Copy Destination:=ws.Range("B2")
+    Next cell
+End Sub
 
-def send_html_email(sender_email, sender_password, recipient_email, subject, html_content):
-    # Set up the SMTP server
-    smtp_server = "your_smtp_server_address"
-    smtp_port = 587  # Change to the appropriate port if needed
-
-    # Create a MIMEText object to hold the HTML content
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = recipient_email
-    msg['Subject'] = subject
-
-    # Attach the HTML content to the email
-    msg.attach(MIMEText(html_content, 'html'))
-
-    # Start the SMTP session and send the email
-    try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
-        print("Email sent successfully!")
-    except Exception as e:
-        print("Error sending email:", str(e))
-
-# Usage example:
-sender_email = "your_email@example.com"
-sender_password = "your_email_password"
-recipient_email = "recipient@example.com"
-subject = "Test HTML Email"
-html_content = "<h1>Hello from Python!</h1><p>This is an HTML email.</p>"
-
-send_html_email(sender_email, sender_password, recipient_email, subject, html_content)
