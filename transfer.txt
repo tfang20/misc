@@ -1,1 +1,22 @@
 in vba, i have a cell taht contains data in the following format: arbitrarystring (text). i want to be able extract the data between the parenthesis in vba to a variable. for example, i want a line that would be vari = "text", having found the string between the parenthesis. this should be dynamic to work with any length arbitrarystring and text
+Sub ExtractText()
+    Dim cellValue As String
+    Dim textToExtract As String
+    Dim openParenPos As Long
+    Dim closeParenPos As Long
+    
+    ' Assuming your cell value is in A1
+    cellValue = Range("A1").Value
+    
+    ' Find the positions of opening and closing parentheses
+    openParenPos = InStr(1, cellValue, "(")
+    closeParenPos = InStr(openParenPos + 1, cellValue, ")")
+    
+    If openParenPos > 0 And closeParenPos > 0 Then
+        ' Extract the text between parentheses
+        textToExtract = Mid(cellValue, openParenPos + 1, closeParenPos - openParenPos - 1)
+        MsgBox "Extracted Text: " & textToExtract
+    Else
+        MsgBox "No parentheses found in the cell."
+    End If
+End Sub
