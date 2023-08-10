@@ -1,1 +1,14 @@
 in python, i have a dataframe df. i want to create a new dataframe df2 that is made up of all the rows in column "type" that are "A" or "B". if the cell in column type is empty, then if column "under" for same row contains "here". if it does, then also put the row into df2. a third dataframe df3 should be created with the rows that do not cotain "A" or "B" in column "type" and do not have "here" in column "under". df3 and df2 should have the same headers as df automatically.
+import pandas as pd
+
+# Assuming df is your original DataFrame
+
+# Create df2 with rows containing "A" or "B" in column "type"
+df2 = df[df['type'].isin(['A', 'B'])]
+
+# Create df3 with rows not containing "A" or "B" in column "type" and not having "here" in column "under"
+df3 = df[~df['type'].isin(['A', 'B']) & (df['under'] != 'here')]
+
+# Display the resulting DataFrames
+print("df2:\n", df2)
+print("df3:\n", df3)
