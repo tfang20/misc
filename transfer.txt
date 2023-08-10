@@ -4,7 +4,7 @@ import pandas as pd
 # Assuming df is your original DataFrame
 
 # Create df2 with rows containing "A" or "B" in column "type"
-df2 = df[df['type'].isin(['A', 'B'])]
+df2 = df[df['type'].isin(['A', 'B'])] | (df['under'] == 'here')]
 
 # Create df3 with rows not containing "A" or "B" in column "type" and not having "here" in column "under"
 df3 = df[~df['type'].isin(['A', 'B']) & (df['under'] != 'here')]
