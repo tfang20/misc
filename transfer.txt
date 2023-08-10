@@ -1,1 +1,11 @@
 in python, i have a dataframe df. i want to use column "type". i want to create a new dataframe df2 that is made up of all the rows in column type that are "A" or "B". df2 should automatically have the same headers as d1. i want the rest, where in "type" is not "A" or "B", in df3
+import pandas as pd
+
+# Assuming df is your original DataFrame
+# Filter rows with "A" or "B" in the "type" column
+df2 = df[df['type'].isin(['A', 'B'])].copy()
+
+# Create df3 by excluding rows with "A" or "B" in the "type" column
+df3 = df[~df['type'].isin(['A', 'B'])].copy()
+
+# df2 and df3 will automatically have the same headers as df
