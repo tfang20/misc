@@ -1,11 +1,1 @@
-in python, i have a dataframe. i want to iterate through the columns "Prices". on each iteration, save the cell values as an array delimited by "|", and convert the array values to float. if the cell does not contain "|", then just save the value and convert to float. then, find the simple average of the array, and make the result the new value of the cell
-import pandas as pd
-
-# Assuming 'df' is your DataFrame
-for index, row in df.iterrows():
-    prices = row['Prices'].split('|')
-    prices = [float(price) for price in prices]
-    average = sum(prices) / len(prices)
-    df.at[index, 'Prices'] = average
-
-# Now your 'Prices' column contains the simple averages
+in python, i have a dataframe df. i want to use column "type". i want to create a new dataframe df2 that is made up of all the rows in column type that are "A" or "B". df2 should automatically have the same headers as d1. i want the rest, where in "type" is not "A" or "B", in df3
