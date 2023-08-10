@@ -1,1 +1,14 @@
 in python, i have an array named months with corresponding month codes (january is a, february is b, etc). i have a dataframe with a column of dates in the format yyyy-mm-dd. i want to change the dates in the column to the following format: codeYY. for example, if the date is 2023-01-13, the result in the cell should be A23
+import pandas as pd
+
+# Sample data
+data = {'dates': ['2023-01-13', '2023-02-25', '2023-03-17']}
+df = pd.DataFrame(data)
+
+# Define the mapping of month codes
+months = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
+
+# Convert dates to the desired format
+df['dates'] = pd.to_datetime(df['dates']).dt.strftime('%y').str.lower() + df['dates'].str[5:7].astype(int).apply(lambda x: months[x - 1])
+
+print(df)
