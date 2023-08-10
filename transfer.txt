@@ -1,14 +1,1 @@
-in python, i have an array named months with corresponding month codes (january is a, february is b, etc). i have a dataframe with a column of dates in the format yyyy-mm-dd. i want to change the dates in the column to the following format: codeYY. for example, if the date is 2023-01-13, the result in the cell should be A23
-import pandas as pd
-
-# Sample data
-data = {'dates': ['2023-01-13', '2023-02-25', '2023-03-17']}
-df = pd.DataFrame(data)
-
-# Define the mapping of month codes
-months = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
-
-# Convert dates to the desired format
-df['dates'] = pd.to_datetime(df['dates']).dt.strftime('%y').str.lower() + df['dates'].str[5:7].astype(int).apply(lambda x: months[x - 1])
-
-print(df)
+in python, i have a dataframe df. i want to create a new dataframe df2 that is made up of all the rows in column "type" that are "A" or "B". if the cell in column type is empty, then if column "under" for same row contains "here". if it does, then also put the row into df2. a third dataframe df3 should be created with the rows that do not cotain "A" or "B" in column "type" and do not have "here" in column "under". df3 and df2 should have the same headers as df automatically.
