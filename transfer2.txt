@@ -1,58 +1,1089 @@
-Sub GetAPIDataAndPaste()
+CDDvsPB4.5
+Sub mainCDD()
+    Dim startTime As Double
+    Application.ScreenUpdating = False
+    
+    todayD = Format(Date, "mm-dd-yyyy")
+    filePath = Environ("USERPROFILE") & "\Downloads\" & todayD & "-SupplyDemand.xlsx"
+    MsgBox "Warning! This model will not work on the 1st of the month! (There is no available data for the 1st on the 1st)", vbExclamation
+    MsgBox "Please ensure that " & filePath & " is correctly downloaded and renamed. Please make sure file is named as " & todayD & "-SupplyDemand.xlsx", vbExclamation
+    startTime = Timer
+    Call pullWSIAPI
+'    Call plattsAPIPull
+    If Dir(filePath) <> "" Then
+    Else
+        MsgBox filePath & " not found. Please download and rerun.", vbExclamation
+        Exit Sub
+    End If
+    Call historyDataToBook
+    Call createTable
+    Call filterTable
+    Call newSheet
+    Call bberg
+    Call filterOutputTable
+    Call dataToGraph
+    Call last5
+    Call formatOutput
+    Call copyNewGraph
+    Call bbergToGraph
+    Call last5BB
+    Call addButton
+    
+    Application.ScreenUpdating = True
+    MsgBox "Finished" & vbNewLine & "Loaded in " & Format(Timer - startTime, "00.00") & " seconds"
+End Sub
+
+Private Sub createTable()
+    ' create table from data to be filtered
+    Dim tbl As ListObject
+    Dim tableRange As Range
+    On Error GoTo ErrorHandling
+    
+    lastRow = Worksheets(1).Cells(Rows.Count, "B").End(xlUp).Row
+
+    Set tableRange = Worksheets(1).Range("A3:B" & CStr(lastRow))
+    
+    Set tbl = Worksheets(1).ListObjects.Add(xlSrcRange, tableRange, xlYes)
+    tbl.Name = "CDDTable"
+    
+ErrorHandling:
+    Set tableRange = Nothing
+End Sub
+
+Private Sub filterTable()
+    Dim mth As String
+    Dim yr As Integer
+    
+    prevLastMth = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date), 1)) ' last yr last mth
+    prevD = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date) + 1, 1)) ' last yr this mth
+    prevNextMth = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date) + 2, 1)) ' last yr next mth
+    
+    currLastMth = DateAdd("d", -1, DateSerial(Year(Date), Month(Date), 1)) ' last month
+    todayD = Date ' this month
+    currNextMth = DateAdd("d", -1, DateSerial(Year(Date), Month(Date) + 2, 1)) ' next month
+
+    ' unfilter table
+    If Worksheets(1).ListObjects("CDDTable").AutoFilter.FilterMode Then
+        Worksheets(1).ListObjects("CDDTable").AutoFilter.ShowAllData
+    End If
+
+    ' filter table -1 +1 mth -1 +0 yr
+    Worksheets(1).ListObjects("CDDTable").Range.AutoFilter Field:=1, Operator:= _
+        xlFilterValues, Criteria2:=Array(1, currLastMth, 1, todayD, 1, currNextMth, 1, _
+        prevLastMth, 1, prevD, 1, prevNextMth)
+End Sub
+
+Private Sub newSheet()
+    Dim ws As Worksheet
+    ' clear sheet if exists, if doesnt create sheet
+    On Error GoTo createSheet:
+    If Worksheets("Output").Index > 0 Then
+        Application.DisplayAlerts = False
+        Worksheets("Output").Delete
+        Application.DisplayAlerts = True
+        GoTo createSheet
+    Else
+        GoTo createSheet
+    End If
+    
+continueRunning:
+    x = 1
+    For Each col In Worksheets(1).ListObjects("CDDTable").Range.SpecialCells(xlCellTypeVisible).Rows  ' paste to output sheet from filtered data
+        Worksheets("Output").Cells(x, 1).Value = Worksheets(1).Cells(col.Row, 1).Value  ' copy date col
+        Worksheets("Output").Cells(x, 2).Value = Worksheets(1).Cells(col.Row, 2).Value  ' copy cdd col
+        x = x + 1
+    Next col
+    
+    lastRow = Worksheets("Output").Cells(Rows.Count, "B").End(xlUp).Row  ' last row of cdd data new sheet
+    lastRowBurn = Worksheets("HistoryData").Cells(Rows.Count, "I").End(xlUp).Row  ' last day of power burn data
+    For y = 2 To lastRow
+        Worksheets("Output").Cells(y, 3).Formula = "=VLOOKUP($A" & y & ",HistoryData!$A$4:$I$" & lastRowBurn & ",9,FALSE)/1000"
+    Next y
+    Exit Sub
+createSheet:
+        ActiveWorkbook.Sheets.Add.Name = "Output"
+        Sheets("Output").Tab.Color = 5287936
+        Sheets("Output").Move After:=Sheets(3)
+        Sheets("Output").Range("C1").Value = "Power Burn"
+        Sheets("Output").Range("D1").Value = "Genscape PB"
+        Call createCharts
+        GoTo continueRunning
+End Sub
+
+Private Sub filterOutputTable()
+    Dim tbl As ListObject
+    Dim tableRange As Range
+    
+    lastRow = Worksheets("Output").Cells(Rows.Count, "B").End(xlUp).Row
+    Set tableRange = Worksheets("Output").Range("A1:D" & lastRow)
+    Set tbl = Worksheets("Output").ListObjects.Add(xlSrcRange, tableRange, xlYes)
+    tbl.Name = "OutputTbl"
+    
+    Set tableRange = Nothing
+End Sub
+
+Private Sub dataToGraph()
+    Dim prevLastMthR
+    Dim prevCurrMthR
+    Dim prevNextMthR
+    Dim currLastMthR
+    Dim currCurrMthR
+    Dim lastRow, firstRow
+    
+    prevLastMth = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date), 1)) ' last yr last mth
+    prevD = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date) + 1, 1)) ' last yr this mth
+    prevNextMth = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date) + 2, 1)) ' last yr next mth
+    
+    currLastMth = DateAdd("d", -1, DateSerial(Year(Date), Month(Date), 1)) ' last month
+    todayD = Date ' this month
+    currNextMth = DateAdd("d", -1, DateSerial(Year(Date), Month(Date) + 2, 1)) ' next month
+    
+    ' Unfilter Data
+    If Worksheets("Output").ListObjects("OutputTbl").AutoFilter.FilterMode Then
+        Worksheets("Output").ListObjects("OutputTbl").AutoFilter.ShowAllData
+    End If
+    
+    ' last yr last mth
+    prevLastMthR = filterForRange(prevLastMth)
+    ' last year this mth
+    prevCurrMthR = filterForRange(prevD)
+    ' last year next mth
+    prevNextMthR = filterForRange(prevNextMth)
+    ' last mth
+    currLastMthR = filterForRange(currLastMth)
+    ' this mth
+    currCurrMthR = filterForRange(todayD)
+    
+    Debug.Print
+    ' data prev mth
+        prevLastMthName = MonthName(Month(prevLastMth)) & " " & Year(prevLastMth)
+        Worksheets("Output").Range("G3").Value = prevLastMthName
+        Worksheets("Output").ChartObjects("LastMth").Activate
+        ActiveChart.SeriesCollection.NewSeries
+        With ActiveChart.FullSeriesCollection(1)  ' prev
+            .Name = "=Output!$G$3"
+            .XValues = "=Output!$B$" & prevLastMthR(0) & ":$B$" & prevLastMthR(1) & ""
+            .Values = "=Output!$C$" & prevLastMthR(0) & ":$C$" & prevLastMthR(1) & ""
+            .Format.Line.Visible = msoTrue
+            .Format.Fill.ForeColor.RGB = RGB(255, 0, 0)
+            .Format.Line.ForeColor.RGB = RGB(255, 0, 0)
+            .Format.Line.Visible = msoFalse
+            .Trendlines.Add
+            .Trendlines(1).Select
+            Selection.Type = xlLogarithmic
+            Selection.Format.Line.ForeColor.RGB = RGB(255, 0, 0)
+            Selection.Format.Line.DashStyle = msoLineSolid
+        End With
+    
+        currLastMthName = MonthName(Month(currLastMth)) & " " & Year(currLastMth)
+        Worksheets("Output").Range("G4").Value = currLastMthName
+        Worksheets("Output").ChartObjects("LastMth").Activate
+        ActiveChart.SeriesCollection.NewSeries
+        With ActiveChart.FullSeriesCollection(2)  ' curr
+            .Name = "=Output!$G$4"
+            .XValues = "=Output!$B$" & currLastMthR(0) & ":$B$" & currLastMthR(1) & ""
+            .Values = "=Output!$C$" & currLastMthR(0) & ":$C$" & currLastMthR(1) & ""
+            .Format.Line.Visible = msoTrue
+            .Format.Fill.ForeColor.RGB = RGB(0, 186, 70)
+            .Format.Line.ForeColor.RGB = RGB(0, 186, 70)
+            .Format.Line.Visible = msoFalse
+            .Trendlines.Add
+            .Trendlines(1).Select
+            Selection.Type = xlLogarithmic
+            Selection.Format.Line.ForeColor.RGB = RGB(0, 186, 70)
+            Selection.Format.Line.DashStyle = msoLineSolid
+        End With
+    ' data this mth
+        prevCurrMthName = MonthName(Month(prevD)) & " " & Year(prevD)
+        Worksheets("Output").Range("N3").Value = prevCurrMthName
+        Worksheets("Output").ChartObjects("ThisMth").Activate
+        ActiveChart.SeriesCollection.NewSeries
+        With ActiveChart.FullSeriesCollection(1)  ' prev
+            .Name = "=Output!$N$3"
+            .XValues = "=Output!$B$" & prevCurrMthR(0) & ":$B$" & prevCurrMthR(1) & ""
+            .Values = "=Output!$C$" & prevCurrMthR(0) & ":$C$" & prevCurrMthR(1) & ""
+            .Format.Line.Visible = msoTrue
+            .Format.Fill.ForeColor.RGB = RGB(255, 0, 0)
+            .Format.Line.ForeColor.RGB = RGB(255, 0, 0)
+            .Format.Line.Visible = msoFalse
+            .Trendlines.Add
+            .Trendlines(1).Select
+            Selection.Type = xlLogarithmic
+            Selection.Format.Line.ForeColor.RGB = RGB(255, 0, 0)
+            Selection.Format.Line.DashStyle = msoLineSolid
+        End With
+        
+        currCurrMthName = MonthName(Month(todayD)) & " " & Year(todayD)
+        Worksheets("Output").Range("N4").Value = currCurrMthName
+        Worksheets("Output").ChartObjects("ThisMth").Activate
+        ActiveChart.SeriesCollection.NewSeries
+        With ActiveChart.FullSeriesCollection(2)  ' curr
+            .Name = "=Output!$N$4"
+            .XValues = "=Output!$B$" & currCurrMthR(0) & ":$B$" & currCurrMthR(1) & ""
+            .Values = "=Output!$C$" & currCurrMthR(0) & ":$C$" & currCurrMthR(1) & ""
+            .Format.Line.Visible = msoTrue
+            .Format.Fill.ForeColor.RGB = RGB(0, 186, 70)
+            .Format.Line.ForeColor.RGB = RGB(0, 186, 70)
+            .Format.Line.Visible = msoFalse
+            .Trendlines.Add
+            .Trendlines(1).Select
+            Selection.Type = xlLogarithmic
+            Selection.Format.Line.ForeColor.RGB = RGB(0, 186, 70)
+            Selection.Format.Line.DashStyle = msoLineSolid
+        End With
+    ' data next mth
+        prevNextMthName = MonthName(Month(prevNextMth)) & " " & Year(prevNextMth)
+        Worksheets("Output").Range("U3").Value = prevNextMthName
+        Worksheets("Output").ChartObjects("NextMth").Activate
+        ActiveChart.SeriesCollection.NewSeries
+        With ActiveChart.FullSeriesCollection(1)  ' prev
+            .Name = "=Output!$U$3"
+            .XValues = "=Output!$B$" & prevNextMthR(0) & ":$B$" & prevNextMthR(1) & ""
+            .Values = "=Output!$C$" & prevNextMthR(0) & ":$C$" & prevNextMthR(1) & ""
+            .Format.Line.Visible = msoTrue
+            .Format.Fill.ForeColor.RGB = RGB(255, 0, 0)
+            .Format.Line.ForeColor.RGB = RGB(255, 0, 0)
+            .Format.Line.Visible = msoFalse
+            .Trendlines.Add
+            .Trendlines(1).Select
+            Selection.Type = xlLogarithmic
+            Selection.Format.Line.ForeColor.RGB = RGB(255, 0, 0)
+            Selection.Format.Line.DashStyle = msoLineSolid
+        End With
+        ActiveChart.SetElement (msoElementChartTitleNone)
+        
+        ' text for mths for graphs
+        lastName = MonthName(Month(Date) - 1) & " " & Year(Date)
+        thisName = MonthName(Month(Date)) & " " & Year(Date)
+        nextName = MonthName(Month(Date) + 1) & " " & Year(Date) - 1
+        Worksheets("Output").Range("G17").Formula = lastName
+        Worksheets("Output").Range("N17").Formula = thisName
+        Worksheets("Output").Range("U17").Formula = nextName
+        
+End Sub
+
+
+
+Private Function filterForRange(mth) As Variant
+    Dim arr(0 To 1) As Variant
+    ' Unfilter Data
+        If Worksheets("Output").ListObjects("OutputTbl").AutoFilter.FilterMode Then
+            Worksheets("Output").ListObjects("OutputTbl").AutoFilter.ShowAllData
+        End If
+    ' filter
+        ActiveSheet.ListObjects("OutputTbl").Range.AutoFilter Field:=1, Operator:= _
+            xlFilterValues, Criteria2:=Array(1, mth)
+    ' Get range
+        counter = 0
+        For Each x In Worksheets("Output").ListObjects("OutputTbl").Range.SpecialCells(xlCellTypeVisible).Rows
+            If counter = 1 Then
+                firstRow = CDbl(x.Row)
+            End If
+            lastRow = CDbl(x.Row)
+            counter = counter + 1
+        Next
+    ' Unfilter Data
+        If Worksheets("Output").ListObjects("OutputTbl").AutoFilter.FilterMode Then
+            Worksheets("Output").ListObjects("OutputTbl").AutoFilter.ShowAllData
+        End If
+'    Set filterForRange = Worksheets("Output").Range("B" & firstRow & ":C" & lastRow)
+    arr(0) = firstRow
+    arr(1) = lastRow
+    ' return array of range: firstrow, lastrow
+    filterForRange = arr
+End Function
+
+Private Sub createCharts()
+    With Worksheets("Output")
+        .Range("G3").Select
+        .Shapes.AddChart2(240, xlXYScatter).Select
+        .Shapes("Chart 1").IncrementLeft -174.75
+        .Shapes("Chart 1").IncrementTop -251.25
+    End With
+    Worksheets("Output").Shapes("Chart 1").ScaleWidth 0.932291776, msoFalse, _
+        msoScaleFromTopLeft
+    Worksheets("Output").Shapes("Chart 1").ScaleHeight 0.9670140712, msoFalse, _
+        msoScaleFromTopLeft
+    ActiveChart.Parent.Cut
+    Worksheets("Output").Range("G3").Select
+    ActiveSheet.Paste
+
+    ActiveChart.ChartArea.Copy
+    With Worksheets("Output")
+        .Range("N3").Select
+        .Paste
+        ActiveChart.ChartArea.Select
+        ActiveChart.ChartType = xlXYScatter
+        .Range("U3").Select
+        .Paste
+        ActiveChart.ChartArea.Select
+        ActiveChart.ChartType = xlXYScatter
+        .Shapes("Chart 2").Name = "LastMth"
+        .Shapes("Chart 3").Name = "ThisMth"
+        .Shapes("Chart 4").Name = "NextMth"
+    End With
+End Sub
+
+Private Sub formatOutput()
+    ' format box
+        With Worksheets("Output").Range("F1:AB20").Interior
+            .Pattern = xlSolid
+            .PatternColorIndex = xlAutomatic
+            .ThemeColor = xlThemeColorDark1
+            .TintAndShade = 0
+            .PatternTintAndShade = 0
+        End With
+        With Worksheets("Output").Range("F1:AB20").Borders(xlEdgeLeft)
+            .LineStyle = xlContinuous
+            .ColorIndex = 0
+            .TintAndShade = 0
+            .Weight = xlMedium
+        End With
+        With Worksheets("Output").Range("F1:AB20").Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .ColorIndex = 0
+            .TintAndShade = 0
+            .Weight = xlMedium
+        End With
+        With Worksheets("Output").Range("F1:AB20").Borders(xlEdgeTop)
+            .LineStyle = xlContinuous
+            .ColorIndex = 0
+            .TintAndShade = 0
+            .Weight = xlMedium
+        End With
+        With Worksheets("Output").Range("F1:AB20").Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous
+            .ColorIndex = 0
+            .TintAndShade = 0
+            .Weight = xlMedium
+        End With
+    ' format top
+    Application.DisplayAlerts = False
+        ' format top line title
+        With Worksheets("Output").Range("F1:AB2")
+            .HorizontalAlignment = xlCenter
+            .VerticalAlignment = xlCenter
+            .MergeCells = True
+            .Font.Size = 20
+            .Font.Bold = True
+            .Interior.ThemeColor = xlThemeColorAccent1
+            .Interior.TintAndShade = 0.399975585192419
+        End With
+        ' graph name
+        Worksheets("Output").Range("F1").Value = "PWCDD vs Powerburn"
+        ' format date axis
+        With Worksheets("Output").Range("G17:M17") ' last mth
+            .HorizontalAlignment = xlCenter
+            .VerticalAlignment = xlCenter
+            .MergeCells = True
+            .Font.Bold = True
+            .Font.Size = 12
+            .Interior.ThemeColor = xlThemeColorAccent1
+            .Interior.TintAndShade = 0.799981688894314
+        End With
+        With Worksheets("Output").Range("N17:T17") ' this mth
+            .HorizontalAlignment = xlCenter
+            .VerticalAlignment = xlCenter
+            .MergeCells = True
+            .Font.Bold = True
+            .Font.Size = 12
+            .Interior.ThemeColor = xlThemeColorAccent1
+            .Interior.TintAndShade = 0.799981688894314
+        End With
+        With Worksheets("Output").Range("U17:AA17") ' next mth
+            .HorizontalAlignment = xlCenter
+            .VerticalAlignment = xlCenter
+            .MergeCells = True
+            .Font.Bold = True
+            .Font.Size = 12
+            .Interior.ThemeColor = xlThemeColorAccent1
+            .Interior.TintAndShade = 0.799981688894314
+        End With
+        With Worksheets("Output").Range("G17:AA17").Borders(xlEdgeLeft)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+        With Worksheets("Output").Range("G17:AA17").Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+        With Worksheets("Output").Range("G17:AA17").Borders(xlInsideVertical)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+        With Worksheets("Output").Range("G17:AA17").Borders(xlEdgeBottom)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+    
+    ' format axes of charts
+    Worksheets("Output").ChartObjects("LastMth").Activate
+    With ActiveChart.Axes(xlCategory)
+        .Select
+        .MaximumScale = 18
+        .MajorUnit = 1
+    End With
+    With ActiveChart.Axes(xlValue)
+        .MaximumScale = 55
+        .MinimumScale = 0
+        .MajorUnit = 5
+    End With
+    
+    Worksheets("Output").ChartObjects("ThisMth").Activate
+    With ActiveChart.Axes(xlCategory)
+        .Select
+        .MaximumScale = 18
+        .MajorUnit = 1
+    End With
+    With ActiveChart.Axes(xlValue)
+        .MaximumScale = 55
+        .MinimumScale = 0
+        .MajorUnit = 5
+    End With
+    
+    Worksheets("Output").ChartObjects("NextMth").Activate
+    With ActiveChart.Axes(xlCategory)
+        .Select
+        .MaximumScale = 18
+        .MajorUnit = 1
+    End With
+    With ActiveChart.Axes(xlValue)
+        .MaximumScale = 55
+        .MinimumScale = 0
+        .MajorUnit = 5
+    End With
+    
+    ' Y axis label
+    With Worksheets("Output").Range("F10")
+        .Value = "Powerburn (Bcf)"
+        .Font.Bold = True
+        .Font.Size = 9
+        .Font.ThemeColor = xlThemeColorDark1
+        .Font.TintAndShade = -0.499984740745262
+        .VerticalAlignment = xlBottom
+        .Orientation = 90
+    End With
+    
+    ' hide col A-C
+'    Worksheets("Output").Range("A:A").EntireColumn.Hidden = True
+'    Worksheets("Output").Range("B:B").EntireColumn.Hidden = True
+'    Worksheets("Output").Range("C:C").EntireColumn.Hidden = True
+'    Worksheets("Output").Range("D:D").EntireColumn.Hidden = True
+    
+    ' legend
+        ' last yr
+        With Worksheets("Output").Range("Y19")
+            .Value = "Last Year"
+            .Font.Color = -16776961
+        End With
+        ActiveSheet.Shapes.AddConnector(msoConnectorStraight, 1005.75, 328.5, 1053, _
+            328.5).Select
+        With Selection.ShapeRange.Line
+            .Visible = msoTrue
+            .ForeColor.RGB = RGB(255, 0, 0)
+            .Transparency = 0
+        End With
+        Selection.ShapeRange.IncrementLeft 286.5
+        Selection.ShapeRange.IncrementTop 0.75
+        ' this year
+        With Worksheets("Output").Range("AA19")
+            .Value = "This Year"
+            .Font.Color = -11489280
+        End With
+        ActiveSheet.Shapes.AddConnector(msoConnectorStraight, 1106.25, 327, 1146.75, _
+            327).Select
+        With Selection.ShapeRange.Line
+            .Visible = msoTrue
+            .ForeColor.RGB = RGB(0, 186, 70)
+            .Transparency = 0
+        End With
+        Selection.ShapeRange.IncrementLeft 285
+        Selection.ShapeRange.IncrementTop 1.5
+        ' last5 day
+        With Worksheets("Output").Range("W19")
+            .Value = "Last 5 Days"
+            .Font.Color = -1038336
+        End With
+        ActiveSheet.Shapes.AddShape(msoShapeOval, 925.5, 321, 20.25, 16.5).Select
+        Selection.ShapeRange.IncrementLeft 3
+        Selection.ShapeRange.IncrementTop 0.75
+        With Selection.ShapeRange.Fill
+            .Visible = msoTrue
+            .ForeColor.RGB = RGB(0, 40, 240)
+            .Transparency = 0
+            .Solid
+        End With
+        Selection.ShapeRange.IncrementLeft 282.75
+    Worksheets("Output").Range("E1").Activate
+    Application.DisplayAlerts = True
+End Sub
+
+Private Sub last5()
+    Dim ws As Worksheet
+    Set ws = Worksheets("Output")
+    lastRow = Worksheets("Output").Cells(Rows.Count, "B").End(xlUp).Row   ' last row of cdd data
+    fiveLastRow = lastRow - 5 ' row for last 5 days, not including today
+    
+    ' x  keep track of the row
+    yy = 5  ' keep track of t-yy days
+    y = 3  ' keep track of which data series being added to graph for prev month
+    xy = 3 ' keep track of which data series being added to graph for curr mth
+    For x = fiveLastRow To lastRow - 1
+        If Month(ws.Range("A" & x).Value) < Month(Date) Then
+            ' last month
+             ws.ChartObjects("LastMth").Activate
+             ActiveChart.SeriesCollection.NewSeries
+             With ActiveChart.FullSeriesCollection(y)
+                .Name = "Day - " & yy
+                .XValues = "=Output!$B$" & x & ""
+                .Values = "=Output!$C$" & x & ""
+                .MarkerSize = 15 - yy
+                .Format.Fill.ForeColor.RGB = RGB(0, 40, 240)
+                y = y + 1
+            End With
+        ElseIf Month(ws.Range("A" & x).Value) = Month(Date) Then
+            ' curr month
+            ws.ChartObjects("ThisMth").Activate
+            ActiveChart.SeriesCollection.NewSeries
+            With ActiveChart.FullSeriesCollection(xy)
+                .Name = "Day - " & yy
+                .XValues = "=Output!$B$" & x & ""
+                .Values = "=Output!$C$" & x & ""
+                .MarkerSize = 15 - yy
+                .Format.Fill.ForeColor.RGB = RGB(0, 40, 240)
+            End With
+            xy = xy + 1
+        End If
+            yy = yy - 1
+    Next x
+    
+    Set ws = Nothing
+End Sub
+
+Private Sub bberg()
+    Dim ws As Worksheet
+    
+    Set ws = Worksheets("Output")
+    lastRow = Worksheets("Output").Cells(Rows.Count, "B").End(xlUp).Row
+    
+    For x = 2 To lastRow
+        ws.Range("D" & x).Formula = "=(BDH(""NGPEUS Index"",""PX_LAST"",A" & x & "))/1000"
+    Next x
+    
+    Set ws = Nothing
+End Sub
+
+Private Sub copyNewGraph()
+
+    ActiveWorkbook.Sheets.Add.Name = "Temp"
+    Worksheets("Output").Range("F1:AB20").Copy Destination:=Worksheets("Temp").Range("F1")
+    
+    ActiveSheet.ChartObjects("LastMth").Activate
+    ActiveSheet.Shapes("LastMth").Name = "BBLastMth"
+    
+    ActiveSheet.ChartObjects("ThisMth").Activate
+    ActiveSheet.Shapes("ThisMth").Name = "BBThisMth"
+    
+    ActiveSheet.ChartObjects("NextMth").Activate
+    ActiveSheet.Shapes("NextMth").Name = "BBNextMth"
+    
+    Worksheets("Temp").Range("F1:AB20").Cut Destination:=Worksheets("Output").Range("F23")
+    Application.CutCopyMode = False
+    
+    Application.DisplayAlerts = False
+    Worksheets("Temp").Delete
+    Application.DisplayAlerts = True
+
+    Worksheets("Output").Range("F1").Value = "PWCDD vs Platts Powerburn"
+    Worksheets("Output").Range("F23").Value = "PWCDD vs Genscape Powerburn"
+End Sub
+
+Private Sub bbergToGraph()
+    Dim prevLastMthR
+    Dim prevCurrMthR
+    Dim prevNextMthR
+    Dim currLastMthR
+    Dim currCurrMthR
+    Dim lastRow, firstRow
+    
+    prevLastMth = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date), 1)) ' last yr last mth
+    prevD = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date) + 1, 1)) ' last yr this mth
+    prevNextMth = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date) + 2, 1)) ' last yr next mth
+    
+    currLastMth = DateAdd("d", -1, DateSerial(Year(Date), Month(Date), 1)) ' last month
+    todayD = Date ' this month
+    currNextMth = DateAdd("d", -1, DateSerial(Year(Date), Month(Date) + 2, 1)) ' next month
+    
+    ' Unfilter Data
+    If Worksheets("Output").ListObjects("OutputTbl").AutoFilter.FilterMode Then
+        Worksheets("Output").ListObjects("OutputTbl").AutoFilter.ShowAllData
+    End If
+    
+    ' last yr last mth
+    prevLastMthR = filterForRange(prevLastMth)
+    ' last year this mth
+    prevCurrMthR = filterForRange(prevD)
+    ' last year next mth
+    prevNextMthR = filterForRange(prevNextMth)
+    ' last mth
+    currLastMthR = filterForRange(currLastMth)
+    ' this mth
+    currCurrMthR = filterForRange(todayD)
+    
+    ' bb lastmth
+    Worksheets("Output").ChartObjects("BBLastMth").Activate
+    ActiveChart.FullSeriesCollection(1).Values = "=Output!$D$" & prevLastMthR(0) & ":$D$" & prevLastMthR(1) & ""
+    ActiveChart.FullSeriesCollection(2).Values = "=Output!$D$" & currLastMthR(0) & ":$D$" & currLastMthR(1) & ""
+    
+    ' bb thismth
+    Worksheets("Output").ChartObjects("BBThisMth").Activate
+    ActiveChart.FullSeriesCollection(1).Values = "=Output!$D$" & prevCurrMthR(0) & ":$D$" & prevCurrMthR(1) & ""
+    ActiveChart.FullSeriesCollection(2).Values = "=Output!$D$" & currCurrMthR(0) & ":$D$" & currCurrMthR(1) & ""
+    
+    ' bb nextmth
+    Worksheets("Output").ChartObjects("BBNextMth").Activate
+    ActiveChart.FullSeriesCollection(1).Values = "=Output!$D$" & prevNextMthR(0) & ":$D$" & prevNextMthR(1) & ""
+    
+    On Error Resume Next
+    Worksheets("Output").ChartObjects("BBLastMth").Activate
+    For x = 3 To 7
+        ActiveChart.FullSeriesCollection(3).Delete
+    Next x
+    Worksheets("Output").ChartObjects("BBThisMth").Activate
+    For y = 3 To 7
+        ActiveChart.FullSeriesCollection(3).Delete
+    Next y
+End Sub
+
+Private Sub last5BB()
+    Dim ws As Worksheet
+    Set ws = Worksheets("Output")
+    lastRow = Worksheets("Output").Cells(Rows.Count, "B").End(xlUp).Row   ' last row of cdd data
+    fiveLastRow = lastRow - 5 ' row for last 5 days, not including today
+    
+    ' x  keep track of the row
+    yy = 5  ' keep track of t-yy days
+    y = 3  ' keep track of which data series being added to graph for prev month
+    xy = 3 ' keep track of which data series being added to graph for curr mth
+    For x = fiveLastRow To lastRow - 1
+        If Month(ws.Range("A" & x).Value) < Month(Date) Then
+            ' last month
+             ws.ChartObjects("BBLastMth").Activate
+             ActiveChart.SeriesCollection.NewSeries
+             With ActiveChart.FullSeriesCollection(y)
+                .Name = "Day - " & yy
+                .XValues = "=Output!$B$" & x & ""
+                .Values = "=Output!$D$" & x & ""
+                .MarkerSize = 15 - yy
+                .Format.Fill.ForeColor.RGB = RGB(0, 40, 240)
+                y = y + 1
+            End With
+        ElseIf Month(ws.Range("A" & x).Value) = Month(Date) Then
+            ' curr month
+            ws.ChartObjects("BBThisMth").Activate
+            ActiveChart.SeriesCollection.NewSeries
+            With ActiveChart.FullSeriesCollection(xy)
+                .Name = "Day - " & yy
+                .XValues = "=Output!$B$" & x & ""
+                .Values = "=Output!$D$" & x & ""
+                .MarkerSize = 15 - yy
+                .Format.Fill.ForeColor.RGB = RGB(0, 40, 240)
+            End With
+            xy = xy + 1
+        End If
+            yy = yy - 1
+    Next x
+    
+    Set ws = Nothing
+End Sub
+
+Private Sub pullWSIAPI()
     Dim url As String
     Dim httpRequest As Object
     Dim responseData As String
-    Dim dataRows() As String
-    Dim dataArray() As String
     Dim destinationSheet As Worksheet
-    Dim rowNum As Long
-    Dim colNum As Integer
     
+    yearPrior = DateAdd("d", -1, DateSerial(Year(Date) - 1, Month(Date) - 1, 1))
+    todayD = Date
+
+    wsiUser = "bmo"
+    wsiEmail = "tom.widdowson@bmo.com"
+    wsiPassword = "snowywinter2022"
+    historicalProductID = "HISTORICAL_WEIGHTED_DEGREEDAYS"
+    cityID = "CityIds[]=CONUS"
+    isDaily = "true"
+    returnDataTypes = "DataTypes[]=population_cdd"
+
     ' Set the URL of the API endpoint
-    url = "YOUR_API_URL_HERE"
-    
+    url = "https://www.wsitrader.com/Services/CSVDownloadService.svc/GetHistoricalObservations?Account=" & wsiUser & "&profile=" & wsiEmail & "&password=" & wsiPassword & "&HistoricalProductID=" & historicalProductID & "&" & returnDataTypes & "&StartDate=" & yearPrior & "&EndDate=" & todayD & "&IsDaily=" & isDaily & "&" & cityID
+
+
     ' Set the destination sheet where you want to paste the data
-    Set destinationSheet = ThisWorkbook.Sheets("Sheet1")
-    
+    Set destinationSheet = ThisWorkbook.Worksheets(1)
+
     ' Create a new instance of the XML HTTP Request object
     Set httpRequest = CreateObject("MSXML2.XMLHTTP")
-    
+
     ' Make the GET request to the API
     httpRequest.Open "GET", url, False
     httpRequest.send
-    
+
     ' Get the response data
     responseData = httpRequest.responseText
-    
-    ' Split the response data into rows based on the delimiter ";"
+
     dataRows = Split(responseData, ";")
+    rowNum = 3
+    counter = 1
+    newLine = "\r\n"
     
-    ' Clear the destination sheet before pasting new data
     destinationSheet.Cells.ClearContents
-    
-    ' Initialize the row number
-    rowNum = 1
-    
-    ' Loop through each row of data and split into columns
+
     For Each rowItem In dataRows
-        ' Split the row data into an array based on the delimiter ","
+'         Split the row data into an array based on the delimiter ","
         dataArray = Split(rowItem, ",")
-        
-        ' Initialize the column number
+
+'         Initialize the column number
         colNum = 1
-        
-        ' Loop through each column of data in the row
+
+        colIndex = 1
+
+'         Loop through each column of data in the row
         For Each colItem In dataArray
+            If counter = 1 Then
+                GoTo continue
+            End If
             ' Paste the data into the destination sheet
-            destinationSheet.Cells(rowNum, colNum).Value = colItem
-            colNum = colNum + 1
+            
+            If colIndex = 2 Then
+                colItem = Left(colItem, InStr(colItem, vbCr) - 1)
+            End If
+            
+            destinationSheet.Cells(rowNum, colNum).Offset(0, colIndex - 1).Value = colItem
+            colIndex = colIndex + 1
+            
+            If colIndex > 2 Then
+                rowNum = rowNum + 1
+                colIndex = 1
+            End If
+continue:
+        counter = 2
         Next colItem
-        
-        ' Move to the next row
+
+'         Move to the next row
         rowNum = rowNum + 1
-    Next rowItem
-    
-    ' Clean up the objects
-    Set httpRequest = Nothing
-    Set destinationSheet = Nothing
+        Next rowItem
+    With destinationSheet
+        .Range("A1").Value = "Daily Weighted Degree Day Observations Report"
+        .Range("B2").Value = "CONUS - CONUS"
+        .Range("A3").Value = "Date"
+        .Range("B3").Value = "Population CDD"
+    End With
 End Sub
+
+Private Sub plattsAPIPull()
+    Dim url As String
+    Dim request As Object
+    
+    todayD = Format(Date, "mm-dd-yyyy")
+    url = "https://api.platts.com/news-insights/v1/content/ff863021-20b4-4b7b-b932-b13d0873b65e"
+    
+    ' API Call
+    Set request = CreateObject("MSXML2.XMLHTTP.6.0")
+    With request
+        .Open "GET", url, False
+        .setRequestHeader "accept", "*/*"
+        .setRequestHeader "appkey", "MrfrmmHMdINXhDluzsvd"
+        .setRequestHeader "Authorization", _
+        "Bearer eyJraWQiOiJTUEdMQkRvbWFpbiIsIng1dCI6InkxX0ZTTjl6UXJOSG1kRDh3Z0pOVzFmVDI0OCIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwczovL2xvZ2luLnNwZ2xvYmFsLmNvbTo0NDMvb2F1dGgyIiwiYXVkIjoiUGxhdHRzQVBJUGxhdGZvcm0iLCJleHA" _
+& "iOjE2OTA4MzM0NDcsImp0aSI6IjE2VkNUVXA4dXZ0dUs2TldlQ0F1dnciLCJpYXQiOjE2OTA4Mjk4NDcsInN1YiI6InRoZW8uZmFuZ0B" _
+& "ibW8uY29tIiwidWlkIjoidGhlby5mYW5nQGJtby5jb20iLCJkaXN0cmlidXRvclBsYXRmb3JtIjoiQVBJIiwiY291bnRyeSI6IlVuaXRl" _
+& "ZCBTdGF0ZXMiLCJyZXNTcnZBdHRyLVN0YXRpYyI6IlJFU09VUkNFQ09OU1QiLCJFbWFpbCI6InRoZW8uZmFuZ0BibW8uY29tIiwiRmlyc3" _
+& "ROYW1lIjoiVGhlbyIsIkdyb3VwcyI6Ik5VTEwiLCJzZXNzaW9uSWQiOiJhZjA4OWFkMTI0ODAyOGIxMTgwYWJiZTU3YmQwYzliMGQyYzE0" _
+& "YWViMmVlOWQxMjAzYmZlMjViM2RhZTRmOTM2IiwiTGFzdE5hbWUiOiJGYW5nIiwiU1BfU1NPX0dST1VQUyI6Ik5VTEwiLCJjbGllbnQiOi" _
+& "JQTF9BUElfUGxhdGZvcm0iLCJzY29wZSI6WyJQbGF0dHNBUElQbGF0Zm9ybS5hcGkiXSwiZG9tYWluIjoiU1BHTEJEb21haW4ifQ.Fysgt7hVlxWQ08K5wggCa4ovMAGn9yE8nFsEAU_GLOJqK6I2XC6EaJxNZ9iiXOzueQrK_frOSGYnyqLZVAmiY1NlnFbTqPn7UwNhaSkcdpp" _
+& "r0pQwdi1onjxsg0SIpOEizFE79f1-wBbzs_Hd71VqgGtWHqiWzW-U4yo6quGQTpMeqUmieFU7RiY9ZhMWYaVoIOkXmxV7TN3Ob0RcLBlDmS" _
+& "FBw-B4VBqCOdMdjZCX9YIuhSlU8uDNf0W2B7UFbMrM9MV42mBf9pGwnnIN7bKn70WoWO6QRN_ZsTNcC-0swmDcKnf-rm1IwRGC-tavS8095M-4nX9bKg8SYed-FHc_gA"
+        .send
+        Debug.Print .Status
+    End With
+    
+    If request.Status = 200 Then
+        ' Save to User\Downloads as mm-dd-yyyy-supplydemand.xls
+        savePath = Environ("USERPROFILE") & "\Downloads\" & todayD & "-SupplyDemand.xls"
+        With CreateObject("ADODB.Stream")
+            .Open
+            .Type = 1
+            .write request.responseBody
+            .SaveToFile savePath, 2
+            .Close
+        End With
+        Call historyDataToBook
+    Else
+        MsgBox "Failed to load Platt's HistoryData.", vbExclamation
+    End If
+    
+    Set request = Nothing
+End Sub
+
+Private Sub historyDataToBook()
+    Dim filePath As String
+    Dim sdBook As Workbook
+    Dim historyData As Worksheet
+    
+    todayD = Format(Date, "mm-dd-yyyy")
+    filePath = Environ("USERPROFILE") & "\Downloads\" & todayD & "-SupplyDemand.xlsx"
+    ' Open downloaded workbook
+    Set sdBook = Workbooks.Open(filePath)
+    ' check sheet, delete if exist else copy
+    On Error Resume Next
+    Set historyData = ThisWorkbook.Worksheets("HistoryData")
+    On Error GoTo 0
+        If Not historyData Is Nothing Then
+            Application.DisplayAlerts = False
+            historyData.Delete
+            Application.DisplayAlerts = True
+        End If
+    
+    ' copy sheet over
+    sdBook.Worksheets("HistoryData").Copy Before:=ThisWorkbook.Worksheets("Output")
+    
+    sdBook.Close False
+    
+    Set sdBook = Nothing
+    Set historyData = Nothing
+End Sub
+
+Private Sub addButton()
+    Dim ws As Worksheet
+    Set ws = Worksheets("Output")
+    
+    ws.Buttons.Add(1487.25, 30, 191.25, 60).Select
+    Selection.OnAction = "mainCDD"
+    With Selection.Characters
+        .Text = "Refresh CDD Charts"
+        .Font.Size = 14
+        .Font.Bold = True
+    End With
+    Selection.Cut
+    ws.Range("AD2").Select
+    ws.Paste
+    
+    ws.Buttons.Add(1487.25, 30, 191.25, 60).Select
+    Selection.OnAction = "mainHDD"
+    With Selection.Characters
+        .Text = "Refresh HDD Charts"
+        .Font.Size = 14
+        .Font.Bold = True
+    End With
+    Selection.Cut
+    ws.Range("AD7").Select
+    ws.Paste
+End Sub
+
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    If Target.Address = "$C$2" Then
+        Call test
+    End If
+End Sub
+
+
+Private Sub test()
+    Application.ScreenUpdating = False
+    Dim ws As Worksheet
+    Set ws = Worksheets("City 1")
+
+    filterID = ws.Cells(2, 3).Value
+    openParen = InStr(1, filterID, "(")
+    closeParen = InStr(openParen + 1, filterID, ")")
+    
+    If filterID <> "" Then
+        ws.Range("E2").Value = filterID & " Forecasts"
+        filterID = Mid(filterID, openParen + 1, closeParen - openParen - 1)
+        Call cityPull(filterID)
+        Call filterToSheet
+        Call formatting
+    Else
+        ws.Range("E2").Value = "Please select city for forecast data..."
+    End If
+    Application.ScreenUpdating = True
+End Sub
+
+Private Sub cityPull(filterID)
+    Dim ws, temp_ws As Worksheet
+    Set ws = Worksheets("City 1")
+    Set temp_ws = Worksheets("temp_ws")
+    temp_ws.UsedRange.Clear
+    
+    wsiUser = "bmo"
+    wsiEmail = "tom.widdowson@bmo.com"
+    wsiPassword = "snowywinter2022"
+    cityID = filterID
+    
+    url = "https://www.wsitrader.com/Services/CSVDownloadService.svc/GetHourlyForecast?Account=" & wsiUser & "&Profile=" & wsiEmail & "&Password=" & wsiPassword & "&region=NA&SiteIds[]=" & cityID & "&TempUnits=F"
+
+    ' Create a new instance of the XML HTTP Request object
+    Set httpRequest = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+
+    ' Make the GET request to the API
+    httpRequest.Open "GET", url, False
+    httpRequest.send
+    responseData = Split(httpRequest.responseText, vbCr)
+    
+    ' Data to sheet
+    rrowIndex = 1 ' Start from the first row of the worksheet
+    For Each rowItem In responseData
+        Dim rowItems() As String
+        rowItems = Split(rowItem, ",") ' Split row items based on comma delimiter
+
+        colIndex = 1 ' Reset column index for each row
+        For Each cellItem In rowItems
+            temp_ws.Cells(rrowIndex, colIndex).Value = cellItem
+            colIndex = colIndex + 1 ' Move to the next column
+        Next cellItem
+
+        rrowIndex = rrowIndex + 1 ' Move to the next row
+    Next rowItem
+    lastRow = temp_ws.Cells(Rows.Count, 1).End(xlUp).Row - 1
+    temp_ws.Rows(lastRow + 1).EntireRow.Delete
+    ' Formatting
+    For x = 2 To lastRow
+        y = temp_ws.Cells(x, 1).Value
+        If x <> 2 And x <> lastRow Then
+            hold = Right(y, Len(y) - InStr(y, vbLf))
+            temp_ws.Cells(x, 1).Value = Left(hold, InStr(hold, " ") - 1)
+        ElseIf x = 2 Then
+            temp_ws.Cells(x, 1).Value = Right(y, Len(y) - InStr(y, vbLf))
+        Else
+            temp_ws.Rows(x).EntireRow.Delete
+        End If
+    Next x
+    temp_ws.UsedRange.WrapText = False
+    Debug.Print lastRow
+End Sub
+
+'Private Sub run()
+'    Dim ws As Worksheet
+'    Dim data_ws As Worksheet
+'    Set ws = Worksheets("City 1")
+'    Set data_ws = Worksheets("Forecast Data")
+'
+'    filterID = ws.Cells(2, 3).Value
+'
+'    ws.Range("E4:I50").Cells.Clear
+'    If filterID <> "" Then
+'        ' do thing
+'        ws.Range("E2").Value = filterID & " Forecasts"
+'        data_ws.Range("$A$2:$K$1787").AutoFilter Field:=1, Criteria1:= _
+'            filterID
+'        Call filterToCity
+'    Else
+'        ws.Range("E2").Value = ""
+'    End If
+'    data_ws.Range("$A$2:$K$1787").AutoFilter Field:=1
+'End Sub
+
+
+Private Sub filterToSheet()
+    Dim ws As Worksheet
+    Dim temp_ws As Worksheet
+    Set ws = Worksheets("City 1")
+    Set temp_ws = Worksheets("temp_ws")
+    Dim zcounter As Integer
+    
+    ws.Range("E4:P18").ClearContents
+    
+    todayD = CDate(Format(Date, "m/d/yyyy"))
+    lastD = CDate(todayD) + 14
+    temp_ws.Range("A2:L2").AutoFilter
+    lastRow = temp_ws.Cells(Rows.Count, 1).End(xlUp).Row
+        
+    zcounter = 4
+    Do While CDbl(todayD) <= CDbl(lastD)
+        temp_ws.Range("$A$2:$L$" & lastRow).AutoFilter Field:=1, Criteria1:= _
+            todayD
+        lastRowV = temp_ws.Cells(Rows.Count, 1).End(xlUp).Row
+        ccount = 1
+        For Each x In temp_ws.Range("A2:A" & lastRowV).SpecialCells(xlCellTypeVisible).Rows
+            If x = "LocalTime" Then
+                GoTo NextIteration
+            End If
+            If ccount = 2 Then
+                firstRow = x.Row
+            End If
+            ccount = ccount + 1
+NextIteration:
+        ccount = ccount + 1
+        Next
+        ' localtime
+        ws.Range("E" & zcounter).Value = CStr(todayD) & " Averages"
+        With ws.Range("F" & zcounter)
+            .Formula = "=Average(temp_ws!B" & firstRow & ":temp_ws!B" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("G" & zcounter)
+            .Formula = "=Average(temp_ws!C" & firstRow & ":temp_ws!C" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("H" & zcounter)
+            .Formula = "=Average(temp_ws!D" & firstRow & ":temp_ws!D" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("I" & zcounter)
+            .Formula = "=Average(temp_ws!E" & firstRow & ":temp_ws!E" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("J" & zcounter)
+            .Formula = "=Average(temp_ws!F" & firstRow & ":temp_ws!F" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("K" & zcounter)
+            .Formula = "=Average(temp_ws!G" & firstRow & ":temp_ws!G" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("L" & zcounter)
+            .Formula = "=Average(temp_ws!H" & firstRow & ":temp_ws!H" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("M" & zcounter)
+            .Formula = "=Average(temp_ws!I" & firstRow & ":temp_ws!I" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("N" & zcounter)
+            .Formula = "=Average(temp_ws!J" & firstRow & ":temp_ws!J" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("O" & zcounter)
+            .Formula = "=Average(temp_ws!K" & firstRow & ":temp_ws!K" & lastRowV & ")"
+            .Value = .Value
+        End With
+        With ws.Range("P" & zcounter)
+            .Formula = "=Average(temp_ws!L" & firstRow & ":temp_ws!L" & lastRowV & ")"
+            .Value = .Value
+        End With
+        zcounter = zcounter + 1
+        todayD = todayD + 1
+    Loop
+    
+End Sub
+
+Private Sub formatting()
+    Dim ws As Worksheet
+    Set ws = Worksheets("City 1")
+    ' get rid of div 0s
+    For x = 4 To 19
+        For y = 6 To 16
+            If CStr(ws.Cells(x, y).Value) = "Error 2007" Then
+                ws.Cells(x, y).Value = "N/A"
+            End If
+        Next y
+    Next x
+    ws.Range("E4:P19").HorizontalAlignment = xlCenter
+End Sub
+
+
+
+
+
+
+
