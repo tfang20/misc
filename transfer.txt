@@ -185,3 +185,652 @@ if __name__ == "__main__":
     dtcc_swap, dtcc_option = download_dtcc()
     ice_swap, ice_option = download_ice()
     ice_nymex_option = ice_HH(ice_swap, ice_option)
+
+############################################################################
+### simple script to pull daily forecast data from wsi to be emailed to natural gas traders (dane c, tom w, mike d, mike c)
+### uses wsi api (tom w login) to request 6-10, 11-15 forecast commentary and degree day (gas h or pop c based on season) tables (wsi, gfs ens, eur ens, gfs op)
+### stores forecast commentary as string, manually convert to html. DD tables stored in dataframe and converted to html
+### dataframes are transposed and cleaned to standardize output to show run, actual, normal, diff (24hr, day to day, and/or 12hr) changes
+### use local outlook app to send emails, done with win32
+### this version takes into account shoulder season (1/1 - 3/14 & 10/16 - 11/14); code could be cleaned up but it works as is - should just make html compilation and email a function
+### also add combined chart of 1-15forecast
+### im being lazy right now, but to optimize, should change all pd.dataframe.appends to .concat(), df to html and email should be functions, and should have one function based off season
+### (cont.) instead of seperating winter functions and summer functions
+### emails with different method
+
+import requests
+from datetime import date
+import io
+import pandas as pd
+import datetime
+from datetime import date
+import win32com.client as win32
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+http_proxy = 'http://tfang03:$641FerridayCourt@sccswg.bmogc.net:8080'  # line to be changed for someone elses login
+proxies={"http":http_proxy,"https":http_proxy}
+
+def swap_rows(df, row1, row2):
+    # function to swap rows --> used to swap normal under run and then reposition everything else
+    df.iloc[row1], df.iloc[row2] =  df.iloc[row2].copy(), df.iloc[row1].copy()
+    return df
+
+def filterDF(df, bool, summer):
+    # function to get rid of useless columns from data frame to standardize all of them
+    # df.columns = df.iloc[0]
+    # get rid of top line junk for header
+    summer = summer
+    new_header = df.iloc[0]
+    df = df[1:]
+    df.columns = new_header
+    # delimiting and creating expanded dataframes
+    if bool == True and summer:
+        # Eur model winter
+        new_df = df["site_id,model,init_time,period,period_start,period_end,population_cdd,population_cdd_dfn,population_cdd_6hr_difference,population_cdd_12hr_difference,population_cdd_18hr_difference,population_cdd_24hr_difference,population_cdd_30hr_difference,population_cdd_36hr_difference,population_cdd_normal\r\n"].str.split(",", expand =True)
+        new_df.pop(new_df.columns[13])
+    elif bool == True and summer == False:
+        # Eur model winter
+        new_df = df["site_id,model,init_time,period,period_start,period_end,gas_hdd,gas_hdd_dfn,gas_hdd_6hr_difference,gas_hdd_12hr_difference,gas_hdd_18hr_difference,gas_hdd_24hr_difference,gas_hdd_30hr_difference,gas_hdd_36hr_difference,gas_hdd_normal\r\n"].str.split(",", expand =True)
+        new_df.pop(new_df.columns[13])
+    elif bool == False and summer:
+        # gfs model summer
+        new_df = df["site_id,model,init_time,period,period_start,period_end,population_cdd,population_cdd_dfn,population_cdd_6hr_difference,population_cdd_12hr_difference,population_cdd_18hr_difference,population_cdd_24hr_difference,population_cdd_30hr_difference,population_cdd_normal\r\n"].str.split(",", expand =True)
+    elif bool == False and summer == False:
+        # gfs model winter
+        new_df = df["site_id,model,init_time,period,period_start,period_end,gas_hdd,gas_hdd_dfn,gas_hdd_6hr_difference,gas_hdd_12hr_difference,gas_hdd_18hr_difference,gas_hdd_24hr_difference,gas_hdd_30hr_difference,gas_hdd_normal\r\n"].str.split(",", expand =True)
+
+    # delete unused last col
+    new_df.pop(new_df.columns[-1])
+    # set column names for new df
+    if summer:
+        new_df.columns = ["site_id","model","init_time","period","period_start","period_end","population_cdd","population_cdd_dfn","population_cdd_6hr_difference","population_cdd_12hr_difference","population_cdd_18hr_difference","population_cdd_24hr_difference","population_cdd_30hr_difference","population_cdd_normal"]
+    else:
+        new_df.columns = ["site_id","model","init_time","period","period_start","period_end","gas_hdd","gas_hdd_dfn","gas_hdd_6hr_difference","gas_hdd_12hr_difference","gas_hdd_18hr_difference","gas_hdd_24hr_difference","gas_hdd_30hr_difference","gas_hdd_normal"]
+
+    return new_df
+
+def email_dataframes(df, summer):
+    # get the dataframes for the email
+    summer = summer
+    holder = str(date.today().strftime("%m/%d/%Y")).replace("/0","/")
+    if holder[0] == "0":
+        holder = holder[1:]
+    if summer:
+        df_email = pd.DataFrame(columns=["site_id","model","init_time","period","population_cdd","population_cdd_dfn","population_cdd_12hr_difference","population_cdd_24hr_difference","population_cdd_normal"])
+        df_holder = pd.DataFrame(columns=["site_id","model","init_time","period","population_cdd","population_cdd_dfn","population_cdd_12hr_difference","population_cdd_24hr_difference","population_cdd_normal"])
+    else: 
+        df_email = pd.DataFrame(columns=["site_id","model","init_time","period","gas_hdd","gas_hdd_dfn","gas_hdd_12hr_difference","gas_hdd_24hr_difference","gas_hdd_normal"])
+        df_holder = pd.DataFrame(columns=["site_id","model","init_time","period","gas_hdd","gas_hdd_dfn","gas_hdd_12hr_difference","gas_hdd_24hr_difference","gas_hdd_normal"])
+    # iterate through column init time of merged df; if is today run, save the row to new df df_email
+    for index,value in df["init_time"].iteritems():
+        if str(value[:value.find(" ")]) == holder:
+            copy = df_merged.loc[index]
+            df_holder = df_holder.append(copy)
+        df_holder = df_holder.reset_index()
+        df_holder.pop(df_holder.columns[0])
+    for index2,value2 in df_holder['period'].iteritems():
+        if str(value2[:3]) != "EIA":
+            copy2 = df_holder.loc[index2]
+            df_email = df_email.append(copy2)
+    df_email = df_email.reset_index()
+    df_email.pop(df_email.columns[0])
+    if summer:
+        gfsop_email = pd.DataFrame(columns=["site_id","model","init_time","period","population_cdd","population_cdd_dfn","population_cdd_12hr_difference","population_cdd_24hr_difference","population_cdd_normal"])
+        gfsen_email = pd.DataFrame(columns=["site_id","model","init_time","period","population_cdd","population_cdd_dfn","population_cdd_12hr_difference","population_cdd_24hr_difference","population_cdd_normal"])
+        euren_email = pd.DataFrame(columns=["site_id","model","init_time","period","population_cdd","population_cdd_dfn","population_cdd_12hr_difference","population_cdd_24hr_difference","population_cdd_normal"])
+    else:
+        gfsop_email = pd.DataFrame(columns=["site_id","model","init_time","period","gas_hdd","gas_hdd_dfn","gas_hdd_12hr_difference","gas_hdd_24hr_difference","gas_hdd_normal"])
+        gfsen_email = pd.DataFrame(columns=["site_id","model","init_time","period","gas_hdd","gas_hdd_dfn","gas_hdd_12hr_difference","gas_hdd_24hr_difference","gas_hdd_normal"])
+        euren_email = pd.DataFrame(columns=["site_id","model","init_time","period","gas_hdd","gas_hdd_dfn","gas_hdd_12hr_difference","gas_hdd_24hr_difference","gas_hdd_normal"])
+    df_email['init_time'] = "0z run"
+    for opindex, opvalue in df_email['model'].iteritems():
+        if opvalue == "GFS_OP":
+            copy3 = df_email.loc[opindex]
+            gfsop_email = gfsop_email.append(copy3)
+        if opvalue == "GFS_ENS":
+            copy3 = df_email.loc[opindex]
+            gfsen_email = gfsen_email.append(copy3)
+        if opvalue == "ECMWF_ENS":
+            copy3 = df_email.loc[opindex]
+            euren_email = euren_email.append(copy3)
+    gfsop_email = gfsop_email.reset_index()
+    gfsop_email.pop(gfsop_email.columns[0])
+
+    gfsen_email = gfsen_email.reset_index()
+    gfsen_email.pop(gfsen_email.columns[0])
+    
+    euren_email = euren_email.reset_index()
+    euren_email.pop(euren_email.columns[0])
+    
+    # accomadting for row swap, row 8 became row 4, and every other row shifted down
+    if summer:
+        gfsop_email.columns = ['Site','Model','Run','Period','CDD Normal',"CDD",'CDD DFN','CDD 12hr Diff',"CDD 24hr Diff"]
+        gfsen_email.columns = ['Site','Model','Run','Period','CDD Normal',"CDD",'CDD DFN','CDD 12hr Diff',"CDD 24hr Diff"]
+        euren_email.columns = ['Site','Model','Run','Period','CDD Normal',"CDD",'CDD DFN','CDD 12hr Diff',"CDD 24hr Diff"]
+    else:
+        gfsop_email.columns = ['Site','Model','Run','Period','HDD Normal',"HDD",'HDD DFN','HDD 12hr Diff',"HDD 24hr Diff"]
+        gfsen_email.columns = ['Site','Model','Run','Period','HDD Normal',"HDD",'HDD DFN','HDD 12hr Diff',"HDD 24hr Diff"]
+        euren_email.columns = ['Site','Model','Run','Period','HDD Normal',"HDD",'HDD DFN','HDD 12hr Diff',"HDD 24hr Diff"]
+
+    gfsop_email = gfsop_email.transpose()
+    gfsen_email = gfsen_email.transpose()
+    euren_email = euren_email.transpose()
+
+    gfsop_email = swap_rows(gfsop_email, 4, 8)
+    gfsop_email = swap_rows(gfsop_email, 8, 7)
+    gfsop_email = swap_rows(gfsop_email, 7, 6)
+    gfsop_email = swap_rows(gfsop_email, 6, 5)
+
+    gfsen_email = swap_rows(gfsen_email, 4, 8)
+    gfsen_email = swap_rows(gfsen_email, 8, 7)
+    gfsen_email = swap_rows(gfsen_email, 7, 6)
+    gfsen_email = swap_rows(gfsen_email, 6, 5)
+
+    euren_email = swap_rows(euren_email, 4, 8)
+    euren_email = swap_rows(euren_email, 8, 7)
+    euren_email = swap_rows(euren_email, 7, 6)
+    euren_email = swap_rows(euren_email, 6, 5)
+
+    return gfsop_email, gfsen_email, euren_email
+
+def model_dfs(summer):
+    summer = summer
+    headers = {
+        'Accept': "application/json",
+        'Accept': 'application/csv'
+    }
+
+    # login info
+    wsiUser = "bmo"
+    wsiEmail = "tom.widdowson@bmo.com"
+    wsiPassword = "snowywinter2022"
+
+    # Forecast Commentary
+    region = "NA"
+    sixten = "6-10"
+    elevfif = "11-15"
+    sixtenURL = "http://www.wsitrader.com/Services/CSVDownloadService.svc/GetForecastDiscussions?Account="+wsiUser+"&profile="+wsiEmail+"&password="+wsiPassword+"&ForecastRange="+sixten+"&Region=" + region
+    elevfifURL = "http://www.wsitrader.com/Services/CSVDownloadService.svc/GetForecastDiscussions?Account="+wsiUser+"&profile="+wsiEmail+"&password="+wsiPassword+"&ForecastRange="+elevfif+"&Region=" + region
+
+    # Degree Day Forecast Models
+    gfsOPModel = "GFS_OP"
+    gfsENModel = "GFS_ENS"
+    eurENModel = "ECMWF_ENS"
+    stations = "Stations[]=CONUS"
+    if summer:
+        dataTypes = "datatypes[]=population_cdd"
+    else:   
+        dataTypes = "datatypes[]=gas_hdd"
+    gfsOPURL = "http://www.wsitrader.com/Services/CSVDownloadService.svc/GetWeightedDegreeDayForecast?Account="+wsiUser+"&Profile="+wsiEmail+"&Password="+wsiPassword+"&forecasttype=Period&Model="+gfsOPModel+"&BiasCorrected=true&"+stations+"&"+dataTypes+"&Region=NA"
+    gfsENURL = "http://www.wsitrader.com/Services/CSVDownloadService.svc/GetWeightedDegreeDayForecast?Account="+wsiUser+"&Profile="+wsiEmail+"&Password="+wsiPassword+"&forecasttype=Period&Model="+gfsENModel+"&BiasCorrected=true&"+stations+"&"+dataTypes+"&Region=NA"
+    eurENURL = "http://www.wsitrader.com/Services/CSVDownloadService.svc/GetWeightedDegreeDayForecast?Account="+wsiUser+"&Profile="+wsiEmail+"&Password="+wsiPassword+"&forecasttype=Period&Model="+eurENModel+"&BiasCorrected=true&"+stations+"&"+dataTypes+"&Region=NA"
+
+    sixtenResponse = requests.get(sixtenURL,headers=headers,proxies=proxies,verify=False).text
+    elevfifResponse = requests.get(elevfifURL,headers=headers,proxies=proxies,verify=False).text
+    gfsOPResponse = io.StringIO(requests.get(gfsOPURL,headers=headers,proxies=proxies,verify=False).text)
+    gfsENResponse = io.StringIO(requests.get(gfsENURL,headers=headers,proxies=proxies,verify=False).text)
+    eurENResponse = io.StringIO(requests.get(eurENURL,headers=headers,proxies=proxies,verify=False).text)
+
+    dfGfsOp = pd.DataFrame(gfsOPResponse) 
+    dfGfsEn = pd.DataFrame(gfsENResponse)
+    dfEurEn = pd.DataFrame(eurENResponse)
+    # drop first row
+    dfGfsOp.drop(index=dfGfsOp.index[0],axis=0,inplace = True)
+    dfGfsEn.drop(index=dfGfsEn.index[0],axis=0,inplace = True)
+    dfEurEn.drop(index=dfEurEn.index[0],axis=0,inplace = True)
+
+    dfGfsOp = filterDF(dfGfsOp, False, summer)
+    dfGfsEn = filterDF(dfGfsEn, False, summer)
+    dfEurEn = filterDF(dfEurEn, True, summer)
+
+    # merge dataframes 
+    df_merged = pd.concat([dfGfsOp,dfGfsEn,dfEurEn],ignore_index=True)
+    # pop unneeded cols
+    if summer:
+        df_merged = df_merged.drop(["population_cdd_6hr_difference","population_cdd_18hr_difference","population_cdd_30hr_difference","period_start","period_end"], axis = 1)
+    else: 
+        df_merged = df_merged.drop(["gas_hdd_6hr_difference","gas_hdd_18hr_difference","gas_hdd_30hr_difference","period_start","period_end"], axis = 1)
+    # dropping all models except for 0z and 12z run
+    df_merged = df_merged[df_merged["init_time"].str.contains("6:00:00 AM") == False]
+    df_merged = df_merged[df_merged["init_time"].str.contains("6:00:00 PM") == False]
+    df_merged = df_merged[df_merged["init_time"].str.contains("12:00:00 PM") == False]
+    df_merged = df_merged[df_merged["period"].str.contains("Obs Month to Date") == False]
+    # reset df index and drop first col bc reset index adds col; prev kept index from old dfs so everything was fucked up
+    df_merged = df_merged.reset_index()
+    df_merged.pop(df_merged.columns[0])
+    return df_merged, sixtenResponse, elevfifResponse
+
+def wsi_model(summer):
+    summer = summer
+    headers = {
+        'Accept': "application/json",
+        'Accept': 'application/csv'
+    }
+
+    # login info
+    wsiUser = "bmo"
+    wsiEmail = "tom.widdowson@bmo.com"
+    wsiPassword = "snowywinter2022"
+
+    # Degree Day Forecast Models
+    wsiModel = "WSI"
+    stations = "Stations[]=CONUS"
+    if summer:
+        dataTypes = "datatypes[]=population_cdd"
+    else:
+        dataTypes = "datatypes[]=gas_hdd"
+
+    wsiURL = "http://www.wsitrader.com/Services/CSVDownloadService.svc/GetWeightedDegreeDayForecast?Account="+wsiUser+"&Profile="+wsiEmail+"&Password="+wsiPassword+"&forecasttype=Period&Model="+wsiModel+"&BiasCorrected=true&"+stations+"&"+dataTypes+"&Region=NA"
+
+    wsiReponse = io.StringIO(requests.get(wsiURL, headers= headers,proxies=proxies, verify=False).text)
+    dfWSI = pd.DataFrame(wsiReponse)
+    
+    ### df formatting
+    # drop first row
+    dfWSI.drop(index=dfWSI.index[0],axis=0,inplace = True)
+    # top header adjustment
+    new_header = dfWSI.iloc[0]
+    dfWSI = dfWSI[1:]
+    dfWSI.columns = new_header
+    if summer:
+        # for summer give pop cdd
+        # delimit df and expand based off header names
+        new_df = dfWSI["site_id,init_time,period,period_start,period_end,population_cdd,population_cdd_normal,population_cdd_difference,population_cdd_dfn\r\n"].str.split(",", expand = True)
+        # set column names for new df
+        new_df.columns = ["site_id","init_time","period","period_start","period_end","population_cdd","population_cdd_normal","population_cdd_difference","population_cdd_dfn"]
+    else:
+        # for winter give gas hdd
+        # delimit df and expand based off header names
+        new_df = dfWSI["site_id,init_time,period,period_start,period_end,gas_hdd,gas_hdd_normal,gas_hdd_difference,gas_hdd_dfn\r\n"].str.split(",", expand = True)
+        # set column names for new df
+        new_df.columns = ["site_id","init_time","period","period_start","period_end","gas_hdd","gas_hdd_normal","gas_hdd_difference","gas_hdd_dfn"]
+
+    # delte unused cols
+    new_df = new_df.drop('period_start', axis = 1)
+    new_df = new_df.drop('period_end', axis = 1)
+    # back to original var, iterate through and get rid of EIA data, tranpose to uniform format
+    dfWSI = pd.DataFrame()
+    for index,value in new_df['period'].iteritems():
+        if str(value[:3]) != "EIA":
+            copy = new_df.loc[index]
+            dfWSI = dfWSI.append(copy)
+    dfWSI['init_time'] = "WSI Run"
+    dfWSI = dfWSI.reset_index()
+    dfWSI.pop(dfWSI.columns[0])
+    if summer:
+        # summer pop cdd
+        # rename cols, allocating for row swaps
+        dfWSI.columns = ['Site','Model','Period','CDD Normal','CDD','CDD DFN',"CDD Diff"]
+    else:
+        # winter gas cdd
+        # rename cols, allocating for row swaps
+        dfWSI.columns = ['Site','Model','Period','HDD Normal','HDD','HDD DFN',"HDD Diff"]
+        
+    dfWSI = dfWSI.transpose()
+    # swap cdd & cdd normal
+    dfWSI = swap_rows(dfWSI,3,4)
+    # swap diff and dfn
+    dfWSI = swap_rows(dfWSI,5,6)
+    dfWSI.drop(dfWSI.columns[len(dfWSI.columns)-1], axis=1, inplace=True)
+
+    return dfWSI
+
+def color_cells_summer(val):
+    val = float(val)
+    if pd.notnull(val) and val != 0:
+        # positive cdd
+        if 2 >= val > 0:
+            return 'background-color: #FFD5A8;' # lightest red 
+        elif 4 > val >= 2:
+            return 'background-color: #FFB25F;' 
+        elif 6 > val >= 4:
+            return 'background-color: #FF694B;' 
+        elif 8 > val >= 6:
+            return 'background-color: #FF2A00;'
+        elif 10 > val >= 8:
+            return 'background-color: #DC2400;' 
+        elif val >= 10:
+            return 'background-color: #9B0000;' 
+        # negative cdd
+        elif -2 <= val < 0:
+            return 'background-color: #DCF1FF;' # lightest blue
+        elif -4 <= val < -2:
+            return 'background-color: #9BD7FF;'
+        elif -6 <= val < -4:
+            return 'background-color: #50B9FF;'
+        elif -8 <= val < -6:
+            return 'background-color: #13A1FF;'        
+        elif -10 <= val < -8:
+            return 'background-color: #0088E1;'        
+        elif val < -10:
+            return 'background-color: #003DA9;' # darkest blue
+
+def color_cells_winter(val):
+    val = float(val)
+    if pd.notnull(val) and val != 0:
+        # positive cdd
+        if 2 >= val > 0:
+            return 'background-color: #DCF1FF;' # lightest blue
+        elif 4 > val >= 2:
+            return 'background-color: #9BD7FF;' 
+        elif 6 > val >= 4:
+            return 'background-color: #50B9FF;' 
+        elif 8 > val >= 6:
+            return 'background-color: #13A1FF;'
+        elif 10 > val >= 8:
+            return 'background-color: #0088E1;' 
+        elif val >= 10:
+            return 'background-color: #003DA9;'# dark blue
+        # negative cdd
+        elif -2 <= val < 0:
+            return 'background-color: #FFD5A8;' # lightest red
+        elif -4 <= val < -2:
+            return 'background-color: #FFB25F;'
+        elif -6 <= val < -4:
+            return 'background-color: #FF694B;'
+        elif -8 <= val < -6:
+            return 'background-color: #FF2A00;'        
+        elif -10 <= val < -8:
+            return 'background-color: #DC2400;'        
+        elif val < -10:
+            return 'background-color: #9B0000;' # darkest red
+
+def only_115(hold1,hold2,hold3):
+    # col_hold = []
+    # if "Period" in hold1.index and hold1.loc["Period"].str.contains("1-15 Day").any():
+    #     col_hold.extend(hold1.columns[hold1.loc["Period"] == "1-15 Day"].tolist())
+    # if "Period" in hold2.index and hold2.loc["Period"].str.contains("11-15 Day").any():
+    #     col_hold.extend(hold2.columns[hold2.loc["Period"] == "1-15 Day"].tolist())
+    # if "Period" in hold3.index and hold3.loc["Period"].str.contains("11-15 Day").any():
+    #     col_hold.extend(hold3.columns[hold3.loc["Period"] == "1-15 Day"].tolist())
+    # df = pd.concat([hold1[col_hold],hold2[col_hold],hold3[col_hold]], axis = 1)
+    df = pd.concat([hold1[3],hold2[3],hold3[3]], axis = 1)
+    return df
+
+today = datetime.datetime.now()
+# today = datetime.datetime(2023,10,16)
+
+# evaluate season for email, if shoulder send both cdd and hdd; should put the stuff into function for readability/efficiency since it all does the same thing but oh well
+if datetime.datetime(today.year,4,15) <= today <= datetime.datetime(today.year,10,15):
+    ### SUMMER
+    season = "Summer"
+    summer = True
+    df_merged, sixtenResponse, elevfifResponse = model_dfs(summer)
+    dfWSI = wsi_model(summer)
+    gfsop_email, gfsen_email, euren_email = email_dataframes(df_merged, summer)
+
+    # combo of 1-15 only
+    combo = only_115(gfsen_email,euren_email,gfsop_email)
+    combo = combo.T.reset_index(drop=True).T
+    combo = pd.concat([dfWSI[3],combo], axis = 1)
+    combo = swap_rows(combo,7,2)
+    combo = swap_rows(combo,7,6)
+    combo = swap_rows(combo,6,5)
+    combo = swap_rows(combo,5,4)
+    combo = swap_rows(combo,4,3)
+    combo = swap_rows(combo,3,2)
+    combo = swap_rows(combo,2,3)
+    combo.index = ["Site","Model","Run","Period","CDD Normal","CDD","CDD DFN","CDD Diff","CDD 12hr Diff","CDD 24hr Diff"]
+    combo = combo.T.reset_index(drop=True).T
+    combo = combo.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, combo.columns[0:]])
+    combo = combo.to_html(index = True, header = False).replace("nan","")
+    combo = combo[:combo.index("table id")] + "table border = ""1 """ + combo[combo.index("table id"):]
+    combo = combo[:combo.index("<thead>")] + combo[combo.index("</thead>"):]
+
+    # add heatmap, convert to html, add borders back, delete headers bc style.applymap overrides header = false
+    wsi_email = dfWSI.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, dfWSI.columns[0:]])
+    wsi_email = wsi_email.to_html(index = True, header = False)
+    wsi_email = wsi_email[:wsi_email.index("table id")] + "table border = ""1 """ + wsi_email[wsi_email.index("table id"):]
+    wsi_email = wsi_email[:wsi_email.index("<thead>")] + wsi_email[wsi_email.index("</thead>"):]
+
+    gfsen_email = gfsen_email.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, gfsen_email.columns[0:]])
+    gfsen_email = gfsen_email.to_html(index = True, header = False)
+    gfsen_email = gfsen_email[:gfsen_email.index("table id")] + "table border = ""1 """ + gfsen_email[gfsen_email.index("table id"):]
+    gfsen_email = gfsen_email[:gfsen_email.index("<thead>")] + gfsen_email[gfsen_email.index("</thead>"):]
+
+    gfsop_email = gfsop_email.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, gfsop_email.columns[0:]])
+    gfsop_email = gfsop_email.to_html(index = True, header = False)
+    gfsop_email = gfsop_email[:gfsop_email.index("table id")] + "table border = ""1 """ + gfsop_email[gfsop_email.index("table id"):]
+    gfsop_email = gfsop_email[:gfsop_email.index("<thead>")] + gfsop_email[gfsop_email.index("</thead>"):]
+
+    euren_email = euren_email.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, euren_email.columns[0:]])
+    euren_email = euren_email.to_html(index = True, header = False)
+    euren_email = euren_email[:euren_email.index("table id")] + "table border = ""1 """ + euren_email[euren_email.index("table id"):]
+    euren_email = euren_email[:euren_email.index("<thead>")] + euren_email[euren_email.index("</thead>"):]
+    
+    charts_email = wsi_email + "<br>" + gfsen_email + "<br>" + euren_email + "<br>" + gfsop_email + "<br>"
+
+    greeting = "<BODY> Good morning,<br><br>From WSITrader, today's WSI, GFS ENS, EUR ENS, and GFS OP Degree Day runs are:<br><br> </BODY>"
+
+    forecasts = \
+    "<BODY>" + sixtenResponse + "<br><br>" + elevfifResponse + "<br><br> \
+    </BODY>"
+    today = str(date.today().strftime("%m-%d-%y"))
+
+    salutation = \
+    "<BODY>Best,<br>Theo<br><br></BODY>"
+
+    outlook = win32.Dispatch('outlook.application')
+    mail = outlook.CreateItem(0)
+    # mail.To = "dane.carillo@bmo.com; mike.cowan@bmo.com; tom.widdowson@bmo.com; michael.dannunzio@bmo.com"
+    # mail.To = "theo.fang@bmo.com"
+    mail.Subject = "WSI Summary " + today
+    mail.HTMLBody = greeting + combo + "<br>" + forecasts + charts_email + salutation
+    # mail.Send()
+
+    print("Email successfully sent.")
+    body = greeting + combo + "<br>" + forecasts + charts_email + salutation
+
+elif datetime.datetime(today.year,1,1) <= today <= datetime.datetime(today.year,3,15) or datetime.datetime(today.year,11,15) <= today <= datetime.datetime(today.year,12,31):
+    ### WINTER
+    season = "Winter"
+    summer = False
+    dfWSI = wsi_model(summer)
+    df_merged, sixtenResponse, elevfifResponse = model_dfs(summer)
+    gfsop_email, gfsen_email, euren_email = email_dataframes(df_merged, summer)
+
+    # combo of 1-15 only
+    combo = only_115(gfsen_email,euren_email,gfsop_email)
+    combo = combo.T.reset_index(drop=True).T
+    combo = pd.concat([dfWSI[3],combo], axis = 1)
+    combo = swap_rows(combo,7,2)
+    combo = swap_rows(combo,7,6)
+    combo = swap_rows(combo,6,5)
+    combo = swap_rows(combo,5,4)
+    combo = swap_rows(combo,4,3)
+    combo = swap_rows(combo,3,2)
+    combo = swap_rows(combo,2,3)
+    combo.index = ["Site","Model","Run","Period","HDD Normal","HDD","HDD DFN","HDD Diff","HDD 12hr Diff","HDD 24hr Diff"]
+    combo = combo.T.reset_index(drop=True).T
+    combo = combo.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, combo.columns[0:]])
+    combo = combo.to_html(index = True, header = False).replace("nan","")
+    combo = combo[:combo.index("table id")] + "table border = ""1 """ + combo[combo.index("table id"):]
+    combo = combo[:combo.index("<thead>")] + combo[combo.index("</thead>"):]
+
+    # add heatmap, convert to html, add borders back, delete headers bc style.applymap overrides header = false
+    wsi_email = dfWSI.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, dfWSI.columns[0:]])
+    wsi_email = wsi_email.to_html(index = True, header = False)
+    wsi_email = wsi_email[:wsi_email.index("table id")] + "table border = ""1 """ + wsi_email[wsi_email.index("table id"):]
+    wsi_email = wsi_email[:wsi_email.index("<thead>")] + wsi_email[wsi_email.index("</thead>"):]
+
+    gfsen_email = gfsen_email.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, gfsen_email.columns[0:]])
+    gfsen_email = gfsen_email.to_html(index = True, header = False)
+    gfsen_email = gfsen_email[:gfsen_email.index("table id")] + "table border = ""1 """ + gfsen_email[gfsen_email.index("table id"):]
+    gfsen_email = gfsen_email[:gfsen_email.index("<thead>")] + gfsen_email[gfsen_email.index("</thead>"):]
+
+    gfsop_email = gfsop_email.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, gfsop_email.columns[0:]])
+    gfsop_email = gfsop_email.to_html(index = True, header = False)
+    gfsop_email = gfsop_email[:gfsop_email.index("table id")] + "table border = ""1 """ + gfsop_email[gfsop_email.index("table id"):]
+    gfsop_email = gfsop_email[:gfsop_email.index("<thead>")] + gfsop_email[gfsop_email.index("</thead>"):]
+
+    euren_email = euren_email.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, euren_email.columns[0:]])
+    euren_email = euren_email.to_html(index = True, header = False)
+    euren_email = euren_email[:euren_email.index("table id")] + "table border = ""1 """ + euren_email[euren_email.index("table id"):]
+    euren_email = euren_email[:euren_email.index("<thead>")] + euren_email[euren_email.index("</thead>"):]
+
+    charts_email = wsi_email + "<br>" + gfsen_email + "<br>" + euren_email + "<br>" + gfsop_email + "<br>"
+
+    greeting = "<BODY> Good morning,<br><br>From WSITrader, today's WSI, GFS ENS, EUR ENS, and GFS OP Degree Day runs are:<br><br> </BODY>"
+
+    forecasts = \
+    "<BODY>" + sixtenResponse + "<br><br>" + elevfifResponse + "<br><br> \
+    </BODY>"
+    today = str(date.today().strftime("%m-%d-%y"))
+
+    salutation = \
+    "<BODY>Best,<br>Theo<br><br></BODY>"
+
+    # outlook = win32.Dispatch('outlook.application')
+    # mail = outlook.CreateItem(0)
+    # mail.To = "dane.carillo@bmo.com; mike.cowan@bmo.com; tom.widdowson@bmo.com; michael.dannunzio@bmo.com"
+    # # mail.To = "theo.fang@bmo.com"
+    # mail.Subject = "WSI Summary " + today
+    # mail.HTMLBody = greeting + combo + "<br>" + forecasts + charts_email + salutation
+    # mail.Send()
+
+    # print("Email successfully sent.")
+    body = greeting + combo + "<br>" + forecasts + charts_email + salutation
+
+else:
+    ### SHOULDER
+    # summer first
+    summer = True
+    dfWSI_summer = wsi_model(summer)
+    df_merged, sixtenResponse_summer, elevfifResponse_summer = model_dfs(summer)
+    gfsop_email_summer, gfsen_email_summer, euren_email_summer = email_dataframes(df_merged, summer)
+
+    # combo of 1-15 only
+    # summer
+    combo_summer = only_115(gfsen_email_summer,euren_email_summer,gfsop_email_summer)
+    combo_summer = combo_summer.T.reset_index(drop=True).T
+    combo_summer = pd.concat([dfWSI_summer[3],combo_summer], axis = 1)
+    combo_summer = swap_rows(combo_summer,7,2)
+    combo_summer = swap_rows(combo_summer,7,6)
+    combo_summer = swap_rows(combo_summer,6,5)
+    combo_summer = swap_rows(combo_summer,5,4)
+    combo_summer = swap_rows(combo_summer,4,3)
+    combo_summer = swap_rows(combo_summer,3,2)
+    combo_summer = swap_rows(combo_summer,2,3)
+    combo_summer.index = ["Site","Model","Run","Period","CDD Normal","CDD","CDD DFN","CDD Diff","CDD 12hr Diff","CDD 24hr Diff"]
+    combo_summer = combo_summer.T.reset_index(drop=True).T
+    combo_summer = combo_summer.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, combo_summer.columns[0:]])
+    combo_summer = combo_summer.to_html(index = True, header = False).replace("nan","")
+    combo_summer = combo_summer[:combo_summer.index("table id")] + "table border = ""1 """ + combo_summer[combo_summer.index("table id"):]
+    combo_summer = combo_summer[:combo_summer.index("<thead>")] + combo_summer[combo_summer.index("</thead>"):]
+
+    # add heatmap, convert to html, add borders back, delete headers bc style.applymap overrides header = false
+    wsi_email_summer = dfWSI_summer.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, dfWSI_summer.columns[0:]])
+    wsi_email_summer = wsi_email_summer.to_html(index = True, header = False)
+    wsi_email_summer = wsi_email_summer[:wsi_email_summer.index("table id")] + "table border = ""1 """ + wsi_email_summer[wsi_email_summer.index("table id"):]
+    wsi_email_summer = wsi_email_summer[:wsi_email_summer.index("<thead>")] + wsi_email_summer[wsi_email_summer.index("</thead>"):]
+
+    gfsen_email_summer = gfsen_email_summer.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, gfsen_email_summer.columns[0:]])
+    gfsen_email_summer = gfsen_email_summer.to_html(index = True, header = False)
+    gfsen_email_summer = gfsen_email_summer[:gfsen_email_summer.index("table id")] + "table border = ""1 """ + gfsen_email_summer[gfsen_email_summer.index("table id"):]
+    gfsen_email_summer = gfsen_email_summer[:gfsen_email_summer.index("<thead>")] + gfsen_email_summer[gfsen_email_summer.index("</thead>"):]
+
+    gfsop_email_summer = gfsop_email_summer.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, gfsop_email_summer.columns[0:]])
+    gfsop_email_summer = gfsop_email_summer.to_html(index = True, header = False)
+    gfsop_email_summer = gfsop_email_summer[:gfsop_email_summer.index("table id")] + "table border = ""1 """ + gfsop_email_summer[gfsop_email_summer.index("table id"):]
+    gfsop_email_summer = gfsop_email_summer[:gfsop_email_summer.index("<thead>")] + gfsop_email_summer[gfsop_email_summer.index("</thead>"):]
+
+    euren_email_summer = euren_email_summer.style.applymap(color_cells_summer,subset=pd.IndexSlice["CDD DFN":, euren_email_summer.columns[0:]])
+    euren_email_summer = euren_email_summer.to_html(index = True, header = False)
+    euren_email_summer = euren_email_summer[:euren_email_summer.index("table id")] + "table border = ""1 """ + euren_email_summer[euren_email_summer.index("table id"):]
+    euren_email_summer = euren_email_summer[:euren_email_summer.index("<thead>")] + euren_email_summer[euren_email_summer.index("</thead>"):]
+    # winter
+    summer = False
+    dfWSI_winter = wsi_model(summer)
+    df_merged, sixtenResponse_winter, elevfifResponse_winter = model_dfs(summer)
+    gfsop_email_winter, gfsen_email_winter, euren_email_winter = email_dataframes(df_merged, summer)
+
+    # winter
+    combo_winter = only_115(gfsen_email_winter,euren_email_winter,gfsop_email_winter)
+    combo_winter = combo_winter.T.reset_index(drop=True).T
+    combo_winter = pd.concat([dfWSI_winter[3],combo_winter], axis = 1)
+    combo_winter = swap_rows(combo_winter,7,2)
+    combo_winter = swap_rows(combo_winter,7,6)
+    combo_winter = swap_rows(combo_winter,6,5)
+    combo_winter = swap_rows(combo_winter,5,4)
+    combo_winter = swap_rows(combo_winter,4,3)
+    combo_winter = swap_rows(combo_winter,3,2)
+    combo_winter = swap_rows(combo_winter,2,3)
+    combo_winter.index = ["Site","Model","Run","Period","HDD Normal","HDD","HDD DFN","HDD Diff","HDD 12hr Diff","HDD 24hr Diff"]
+    combo_winter = combo_winter.T.reset_index(drop=True).T
+    combo_winter = combo_winter.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, combo_winter.columns[0:]])
+    combo_winter = combo_winter.to_html(index = True, header = False).replace("nan","")
+    combo_winter = combo_winter[:combo_winter.index("table id")] + "table border = ""1 """ + combo_winter[combo_winter.index("table id"):]
+    combo_winter = combo_winter[:combo_winter.index("<thead>")] + combo_winter[combo_winter.index("</thead>"):]
+
+    # add heatmap, convert to html, add borders back, delete headers bc style.applymap overrides header = false
+    wsi_email_winter = dfWSI_winter.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, dfWSI_winter.columns[0:]])
+    wsi_email_winter = wsi_email_winter.to_html(index = True, header = False)
+    wsi_email_winter = wsi_email_winter[:wsi_email_winter.index("table id")] + "table border = ""1 """ + wsi_email_winter[wsi_email_winter.index("table id"):]
+    wsi_email_winter = wsi_email_winter[:wsi_email_winter.index("<thead>")] + wsi_email_winter[wsi_email_winter.index("</thead>"):]
+
+    gfsen_email_winter = gfsen_email_winter.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, gfsen_email_winter.columns[0:]])
+    gfsen_email_winter = gfsen_email_winter.to_html(index = True, header = False)
+    gfsen_email_winter = gfsen_email_winter[:gfsen_email_winter.index("table id")] + "table border = ""1 """ + gfsen_email_winter[gfsen_email_winter.index("table id"):]
+    gfsen_email_winter = gfsen_email_winter[:gfsen_email_winter.index("<thead>")] + gfsen_email_winter[gfsen_email_winter.index("</thead>"):]
+
+    gfsop_email_winter = gfsop_email_winter.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, gfsop_email_winter.columns[0:]])
+    gfsop_email_winter = gfsop_email_winter.to_html(index = True, header = False)
+    gfsop_email_winter = gfsop_email_winter[:gfsop_email_winter.index("table id")] + "table border = ""1 """ + gfsop_email_winter[gfsop_email_winter.index("table id"):]
+    gfsop_email_winter = gfsop_email_winter[:gfsop_email_winter.index("<thead>")] + gfsop_email_winter[gfsop_email_winter.index("</thead>"):]
+
+    euren_email_winter = euren_email_winter.style.applymap(color_cells_winter,subset=pd.IndexSlice["HDD DFN":, euren_email_winter.columns[0:]])
+    euren_email_winter = euren_email_winter.to_html(index = True, header = False)
+    euren_email_winter = euren_email_winter[:euren_email_winter.index("table id")] + "table border = ""1 """ + euren_email_winter[euren_email_winter.index("table id"):]
+    euren_email_winter = euren_email_winter[:euren_email_winter.index("<thead>")] + euren_email_winter[euren_email_winter.index("</thead>"):]
+
+    charts_email = wsi_email_summer + "<br>" + wsi_email_winter + "<br>" + gfsen_email_summer + "<br>" + gfsen_email_winter + "<br>" + euren_email_summer + "<br>" + euren_email_winter + "<br>" + gfsop_email_summer + "<br>" + gfsop_email_winter + "<br>"
+
+    greeting = "<BODY> Good morning,<br><br>From WSITrader, today's WSI, GFS ENS, EUR ENS, and GFS OP Degree Day runs are:<br><br> </BODY>"
+
+    forecasts = \
+    "<BODY>" + sixtenResponse_summer + "<br><br>" + elevfifResponse_summer + "<br><br> \
+    </BODY>"
+    today = str(date.today().strftime("%m-%d-%y"))
+
+    salutation = \
+    "<BODY>Best,<br>Theo<br><br></BODY>"
+
+    # outlook = win32.Dispatch('outlook.application')
+    # mail = outlook.CreateItem(0)
+    # mail.To = "dane.carillo@bmo.com; mike.cowan@bmo.com; tom.widdowson@bmo.com; michael.dannunzio@bmo.com"
+    # # mail.To = "theo.fang@bmo.com"
+    # mail.Subject = "WSI Summary " + today
+    # mail.HTMLBody = greeting + combo_summer + "<br>" + combo_winter + "<br>" + forecasts + charts_email + salutation
+    # mail.Send()
+
+    # print("Email successfully sent.")
+    body = greeting + combo_summer + "<br>" + combo_winter + "<br>" + forecasts + charts_email + salutation
+
+def send_html_email(sender_email, sender_password, recipient_email, subject, html_content):
+    # Set up the SMTP server
+    smtp_server = "smtp-mail.outlook.com"
+    smtp_port = 587  # Change to the appropriate port if needed
+
+    # Create a MIMEText object to hold the HTML content
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = recipient_email
+    msg['Subject'] = subject
+
+    # Attach the HTML content to the email
+    msg.attach(MIMEText(html_content, 'html'))
+
+    # Start the SMTP session and send the email
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+        print("Email sent successfully")
+    except Exception as e:
+        print("Error sending email:", str(e))
+
+# send_html_email("theo.fang@bmo.com", "Special01", "theo.fang@bmo.com", "WSI Summary "+ today, body)
+
