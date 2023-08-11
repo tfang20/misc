@@ -1,14 +1,187 @@
-in python, i have a dataframe df. i want to create a new dataframe df2 that is made up of all the rows in column "type" that are "A" or "B". if the cell in column type is empty, then if column "under" for same row contains "here". if it does, then also put the row into df2. a third dataframe df3 should be created with the rows that do not cotain "A" or "B" in column "type" and do not have "here" in column "under". df3 and df2 should have the same headers as df automatically.
+from datetime import date, timedelta
+import requests
+import io
+import zipfile
 import pandas as pd
+import numpy as np
 
-# Assuming df is your original DataFrame
+yest = (date.today() - timedelta(1)).strftime("%Y_%m_%d")
+userDir = r"\\Ibg\lobdata\TP\FICC\US-CMD-GAS\SDR Swap & Option Analysis\new_sdr_analysis" + "\\" + yest
+future_codes = ["","F","G","H","J","K","M","N","Q","U","V","X","Z"]
+##### !!!!!!!!!!!!!!!!!!!! THIS LINE NEEDS TO BE CHANGED TO A DIFFERENT ACCOUNT TO WORK; MY ACCOUNT WILL BE SHUT DOWN 8/11/23 @ 3PM
+http_proxy = 'http://tfang03:$641FerridayCourt@sccswg.bmogc.net:8080'  #####
+############################################################################
+proxies={"http":http_proxy,"https":http_proxy}
 
-# Create df2 with rows containing "A" or "B" in column "type"
-df2 = df[df['type'].isin(['A', 'B'])] | (df['under'] == 'here')]
+# download data from dtcc.com, format into main dataframe of relevant data in good format to be used
+def download_dtcc():
+    # if this link format ever changes this script will fail
+    url = "https://kgc0418-tdw-data-0.s3.amazonaws.com/cftc/eod/CFTC_CUMULATIVE_COMMODITIES_" + yest + ".zip"
+    request = requests.get(url, proxies = proxies, verify = False)
+    zip = zipfile.ZipFile(io.BytesIO(request.content))
+    zip.extractall(userDir)
 
-# Create df3 with rows not containing "A" or "B" in column "type" and not having "here" in column "under"
-df3 = df[~df['type'].isin(['A', 'B']) & (df['under'] != 'here')]
+    df = pd.read_csv(userDir + "\CFTC_CUMULATIVE_COMMODITIES_" + yest + ".csv", low_memory = False)
+    ### filtering the dataframe
+    # filter by new trades only
+    df = df[df["Action type"].str.contains("NEWT", na=False)]
+    # filter yest only
+    df = df[df["Execution Timestamp"].str.contains(yest.replace("_","-"),na=False)]
+    # natty only
+    df = df[df["Product name"].str.contains("NatGas", na=False)]
+    # mbtu only
+    df = df[df["Quantity unit of measure-Leg 1"].str.contains("MBTU", na=False)]
+    # drop cols that are n/a, replace all n/a with ""
+    df = df.dropna(axis = 1, how = "all")
+    df = df.replace(np.nan,'', regex =True)
+    # only relevant data + relevant formatting
+    # df2 holds all the relevant data for the 5 types of trades: nymex swap, nymex option, basis swap, fixed basis swap, fixed basis option
+    df2 = df.pop("Event timestamp")
+    df2 = pd.concat([df2,df.pop("Underlying asset subtype or underlying contract subtype-Leg 1")], axis = 1)
+    df2 = pd.concat([df2,df.pop("Underlying asset subtype or underlying contract subtype-Leg 2")], axis = 1)
+    df2 = pd.concat([df2,df.pop("Product name").str[24:].str.replace(":Cash","")], axis = 1)  # only the trade type
+    df2 = pd.concat([df2,df.pop("Effective Date").str[:10].apply(pd.to_datetime, format = "%Y-%m-%d").dt.date], axis = 1)  # date format with date only
+    # conver to contract code
+    df2["Effective Date"] = pd.to_datetime(df2['Effective Date']).dt.strftime('%m').astype(int).apply(lambda x: future_codes[x]) + pd.to_datetime(df2['Effective Date']).dt.strftime('%y')
+    df2 = pd.concat([df2,df.pop("Expiration Date").str[:10].apply(pd.to_datetime, format = "%Y-%m-%d").dt.date], axis = 1)  # date format with date only
+    # convert to contract code
+    df2["Expiration Date"] = pd.to_datetime(df2['Expiration Date']).dt.strftime('%m').astype(int).apply(lambda x: future_codes[x]) + pd.to_datetime(df2['Expiration Date']).dt.strftime('%y')
+    # convert to term
+    df2["Term"] = df2["Effective Date"] + "/" + df2["Expiration Date"]
+    df2 = df2.drop(columns="Effective Date").drop(columns="Expiration Date")
+    df2 = pd.concat([df2,df.pop("Maturity date of the underlier").apply(lambda x: pd.to_datetime(x[:10], format = "%Y-%m-%").date() if x else x)], axis = 1)
+    df2 = pd.concat([df2,df.pop("Price").apply(lambda x: float(x.replace(",","")) if x != '' else 0)], axis = 1) # get rid of comma, price as float, 0 if empty (options)
+    df2 = pd.concat([df2,df.pop("Total notional quantity-Leg 1").apply(lambda x: float(x.replace(",","").replace("+","")) if x != '' else 0)], axis = 1) 
+    df2 = pd.concat([df2,df.pop("Total notional quantity-Leg 2").apply(lambda x: float(x.replace(",","").replace("+","")) if x != '' else 0)], axis = 1) 
+    df2["Total Notional Lots"] = (df2["Total notional quantity-Leg 1"] + df2["Total notional quantity-Leg 2"]) / 1000
+    df2 = df2.drop(columns=["Total notional quantity-Leg 1"]).drop(columns=["Total notional quantity-Leg 2"])
+    df2 = pd.concat([df2,df.pop("Strike Price").apply(lambda x: float(x.replace(",","")) if x != "" else 0)], axis = 1)
+    df2 = pd.concat([df2,df.pop("Option Type")], axis = 1)
+    df2 = pd.concat([df2,df.pop("Option Premium Amount").apply(lambda x: float(x.replace(",","").replace("+","")) if x != "" else 0)], axis = 1)
+    df2 = df2.reset_index()
+    df2.pop(df2.columns[0])
+    # save filtered to csv with df2, which houses all data cleaned
+    df2.to_csv(userDir + "\\" + yest + "_DTCC_Data_Cleaned.csv", header = True, index = False, sep=',')
+    # save to individual df for later, options & swaps --> later will be refiltered to the 5 types
+    df_option = df2[df2["Product name"].isin(["Exotic","Option"])].copy()
+    df_swap = df2[df2['Product name'].isin(["Swap"])].copy().drop(columns=["Option Type"])
+    df_swap = df_swap.drop(columns="Strike Price").drop(columns="Option Premium Amount").reset_index()
+    df_swap.pop(df_swap.columns[0])
 
-# Display the resulting DataFrames
-print("df2:\n", df2)
-print("df3:\n", df3)
+    return df_swap, df_option
+    
+# download data from ice vault, format into main dataframe of relevant data in good format to be used
+def download_ice():
+    # if the link format, bearer key, or header names ever change this script will fail
+    headers = {
+    'accept': '*/*',
+    'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjQ4ZmYyNTdjLTcyNzYtNDFlOC04ZmNiLTc3M2M4YWNmNGEzMSJ9.1m8Xffge38E5Oagf_vzeAgAY3j2OyufYktqbPALRqMYzWvHlWRpwZKFbwtLH5BWexV4nPlEMV5OWQ5x7spf7Gw',
+    }
+    response = requests.get('https://tradevault.ice.com/tvcftc/ticker/webpi/exportTicks?date=' + yest.replace("_","-"),headers = headers, proxies = proxies, verify= False)
+    # all values had quotes around them so had to get rid
+    df = pd.DataFrame(io.StringIO(response.text.replace('"',"")))
+    # set row 1 as headers so can set header names
+    df.columns = df.iloc[0]
+    df = df["Cleared,Custom basket indicator,Action Type,Event type,Amendment indicator,Event timestamp,Notional amount Leg 1,Notional amount Leg 2,Notional currency Leg 1,Notional currency Leg 2,Notional amount in effect on associated effective date Leg 1,Notional amount in effect on associated effective date Leg 2,Effective Date of the Notional Amount Leg 1,Effective Date of the Notional Amount Leg 2,End Date of Notional Amount Leg 1,End Date of Notional Amount Leg 2,Call Amount Leg 1,Call Amount Leg 2,Call Currency Leg 1,Call Currency Leg 2,Put Amount Leg 1,Put Amount Leg 2,Put Currency Leg 1,Put Currency Leg 2,Notional Quantity Leg 1,Notional Quantity Leg 2,Quantity Frequency Leg 1,Quantity Frequency Leg 2,Quantity Frequency Multiplier Leg 1,Quantity Frequency Multiplier Leg 2,Quantity Unit of Measure Leg 1,Quantity Unit of Measure Leg 2,Total Notional Quantity Leg 1,Total Notional Quantity Leg 2,Package Indicator,Package Transaction Price,Package Transaction Price Currency,Package Transaction Price Notation,Package Transaction Spread,Package Transaction Spread Currency,Package Transaction Spread Notation,Fixed Rate Day Count Convention Leg 1,Fixed Rate Day Count Convention Leg 2,Floating Rate Day Count Convention Leg 1,Floating Rate Day Count Convention Leg 2,Floating Rate Reset Frequency Period Leg 1,Floating Rate Reset Frequency Period Leg 2,Floating Rate Reset Frequency Period Multiplier Leg 1,Floating Rate Reset Frequency Period Multiplier Leg 2,Other Payment Type,Other Payment Amount,Other Payment Currency,Fixed Rate Payment Frequency Period Leg 1,Fixed Rate Payment Frequency Period Leg 2,Floating Rate Payment Frequency Period Leg 1,Floating Rate Payment Frequency Period Leg 2,Fixed Rate Payment Frequency Period Multiplier Leg 1,Fixed Rate Payment Frequency Period Multiplier Leg 2,Floating Rate Payment Frequency Period Multiplier Leg 1,Floating Rate Payment Frequency Period Multiplier Leg 2,Exchange Rate,Exchange Rate Basis,Fixed Rate Leg 1,Fixed Rate Leg 2,Post Price Swap Indicator,Price,Price Currency,Price Notation,Price unit of Measure,Spread Leg 1,Spread Leg 2,Spread Currency Leg 1,Spread Currency Leg 2,Spread Notation Leg 1,Spread Notation Leg 2,Strike Price,Strike Price Currency / Currency Pair,Strike Price Notation,Option Premium Amount,Option Premium Currency,First Exercise Date,Index Factor,Embedded Option Type,Settlement Currency Leg 1,Settlement Currency Leg 2,Settlement Location Leg 1,Settlement Location Leg 2,Non Standardized Term Indicator,Block Trade Election Indicator,Effective date,Expiration date,Execution timestamp,Platform Identifier,Prime brokerage transaction indicator,Asset Class,Delivery Type,Instrument Type,Standard Contract Specification,Underlier ID Leg 1,Underlier ID Leg 2,Underlier ID Source Leg 1,Underlier ID Source Leg 2,Underlying Asset or Underlying Contract Type Leg 1,Underlying Asset or Underlying Contract Type Leg 2,Underlying Asset Subtype or Underlying Contract Subtype Leg 1,Underlying Asset Subtype or Underlying Contract Subtype Leg 2,Underlying Credit Index Series,Underlying Credit Index Version,Product Name,Physical Delivery Region Leg 1,Physical Delivery Region Leg 2,Pricing Index Region Leg 1,Pricing Index Region Leg 2,Physical Delivery Location Leg 1,Physical Delivery Location Leg 2,Maturity Date of the Underlier,Large Notional Off-Facility Swap Election Indicator,Dissemination Identifier,Original Dissemination Identifier,Dissemination Timestamp\n"].str.split(",", expand=True)
+    df.columns = df.iloc[0]
+    # save unfiltered to csv
+    df.to_csv(userDir + "\\" + yest + "_ICE_Data.csv", header = False, index = False, sep=',')
+    ### filtering the dataframe
+    # filter by new trades only
+    df = df[df["Action Type"].str.contains('NEWT', na=False)]
+    # filter yest only
+    df = df[df["Event timestamp"].str.contains(yest.replace("_","-"),na=False)]
+    # MBTU only
+    df = df[df["Quantity Unit of Measure Leg 1"].str.contains("MBTU", na=False)]
+    # omit masked/only natty
+    # df = df[df["Underlier ID Leg 1"].str.contains("NAT",na=False)]
+    # drop cols thatre all empty
+    df = df.dropna(axis=1,how='all')
+    # df2 holds all the relevant data for the 5 types of trades: nymex swap, nymex option, basis swap, fixed basis swap, fixed basis option
+    df2 = df.pop("Event timestamp")
+    df2 = pd.concat([df2,df.pop("Underlier ID Leg 1")], axis = 1)
+    df2 = pd.concat([df2,df.pop("Product Name")], axis = 1)
+
+    ###########################################
+    # not using these cols anymore, irrelevant
+    # df2 = pd.concat([df2,df.pop("Delivery Type")], axis = 1)
+    # df2 = pd.concat([df2,df.pop("Instrument Type")], axis = 1)
+    # df2["Trade Type"] = df2["Delivery Type"] + df2["Instrument Type"]
+    # df2 = df2.drop(columns=['Delivery Type'])
+    # df2 = df2.drop(columns=['Instrument Type'])
+    ###########################################
+
+    # convert to date and only have relevant start date
+    df2 = pd.concat([df2,df.pop("Effective date").str[:10].apply(pd.to_datetime, format = "%Y-%m-%d").dt.date], axis = 1)
+    # convert to contract code
+    df2["Effective date"] = pd.to_datetime(df2['Effective date']).dt.strftime('%m').astype(int).apply(lambda x: future_codes[x]) + pd.to_datetime(df2['Effective date']).dt.strftime('%y')
+    # get relevant date, convert to datetime
+    df2 = pd.concat([df2,df.pop("Expiration date").str[-10:].apply(pd.to_datetime, format = "%Y-%m-%d").dt.date], axis = 1)
+    # convert to contract code
+    df2["Expiration date"] = pd.to_datetime(df2['Expiration date']).dt.strftime('%m').astype(int).apply(lambda x: future_codes[x]) + pd.to_datetime(df2['Expiration date']).dt.strftime('%y')
+    # convert to term
+    df2["Term"] = df2["Effective date"] + "/" + df2["Expiration date"]
+    df2 = df2.drop(columns="Effective date").drop(columns="Expiration date")
+    # convert prices to readable format: delimit by "|", calc average to get price of trade
+        # takes the cell in price, calcs average, returns; gives 0 when no value (e.g. when option so no price data) --> should be function bc repeated but oh well
+        ### this should really be day weighted average instead of simple average, so a few cents off; assumes trader knows the prev trading range
+    df2 = pd.concat([df2,df.pop("Price")], axis = 1)
+    for index, row in df2.iterrows():
+        prices = row['Price'].split("|")
+        prices = [float(price) if price != "" else 0 for price in prices]
+        average = sum(prices) / len(prices)
+        df2.at[index,'Price'] = average
+    # convert to number format, combine into one column
+    df2 = pd.concat([df2,df.pop("Total Notional Quantity Leg 1").apply(lambda x: float(x.replace(",","")) if x != '' else 0)], axis = 1)
+    df2 = pd.concat([df2,df.pop("Total Notional Quantity Leg 2").apply(lambda x: float(x.replace(",","")) if x != '' else 0)], axis = 1)
+    df2["Total Notional Lots"] = (df2["Total Notional Quantity Leg 1"] + df2["Total Notional Quantity Leg 2"]) / 1000
+    df2 = df2.drop(columns=["Total Notional Quantity Leg 1"]).drop(columns=["Total Notional Quantity Leg 2"])
+    # calc avg, same way as price; should also be weighted but assumes trader knows range so simple avg
+    df2 = pd.concat([df2,df.pop("Strike Price")], axis = 1)
+    for index, row in df2.iterrows():
+        prices = row['Strike Price'].split("|")
+        prices = [float(price) if price != "" else 0 for price in prices]
+        average = sum(prices) / len(prices)
+        df2.at[index,'Strike Price'] = average
+    # convert to number format, combine into one column; 0 if empty cell
+    df2 = pd.concat([df2,df.pop("Call Amount Leg 1").apply(lambda x: float(x.replace(",","")) if x != '' else 0)], axis = 1)
+    df2 = pd.concat([df2,df.pop("Call Amount Leg 2").apply(lambda x: float(x.replace(",","")) if x != '' else 0)], axis = 1)
+    df2['Total Call Amount'] = df2["Call Amount Leg 1"] + df2["Call Amount Leg 2"]
+    df2 = df2.drop(columns=['Call Amount Leg 1']).drop(columns=["Call Amount Leg 2"])
+    df2 = pd.concat([df2,df.pop("Put Amount Leg 1").apply(lambda x: float(x.replace(",","")) if x != '' else 0)], axis = 1)
+    df2 = pd.concat([df2,df.pop("Put Amount Leg 2").apply(lambda x: float(x.replace(",","")) if x != '' else 0)], axis = 1)
+    df2['Total Put Amount'] = df2["Put Amount Leg 1"] + df2["Put Amount Leg 2"]
+    df2 = df2.drop(columns=['Put Amount Leg 1']).drop(columns=["Put Amount Leg 2"])
+    df2 = pd.concat([df2,df.pop("Option Premium Amount")], axis = 1)
+    for index, row in df2.iterrows():
+        prices = row['Option Premium Amount'].split("|")
+        prices = [float(price) if price != "" else 0 for price in prices]
+        average = sum(prices) / len(prices)
+        df2.at[index,'Option Premium Amount'] = average
+    df2 = df2.reset_index()
+    df2.pop(df2.columns[0])
+    # save filtered to csv
+    df2.to_csv(userDir + "\\" + yest + "_ICE_Data_Cleaned.csv", header = True, index = False, sep=',')
+
+    # save to individual df for later, options & swaps --> later will be refiltered to the 5 types
+    df_option = df2[(df2["Product Name"].str.contains("option", case = False, na = False)) | (df2["Product Name"].str.contains("exotic", case = False, na = False)) \
+                    | (df2["Strike Price"] != 0)]
+    df_option = df_option.drop(columns="Price").reset_index() # get rid of unnecessary stuff and reset index
+    df_option.pop(df_option.columns[0])
+    df_swap = df2[(df2["Product Name"].str.contains("swap", case = False, na = False)) | (df2["Strike Price"] == 0)]
+    df_swap = df_swap.drop(columns="Strike Price").drop(columns="Total Call Amount").drop(columns="Total Put Amount").drop(columns="Option Premium Amount").reset_index()
+    df_swap.pop(df_swap.columns[0])
+ 
+    return df_swap, df_option
+
+def ice_HH(ice_swap, ice_option):
+    ## ice nymex option
+    ice_nymex_option = ice_option[(ice_option["Underlier ID Leg 1"].str.contains("NY", case = False, na = False)) | (ice_option["Product Name"].str.contains("Hub", case = False, na = False)) ]
+    
+    return ice_nymex_option
+
+# main method
+if __name__ == "__main__":
+    dtcc_swap, dtcc_option = download_dtcc()
+    ice_swap, ice_option = download_ice()
+    ice_nymex_option = ice_HH(ice_swap, ice_option)
