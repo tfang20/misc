@@ -1,3 +1,4 @@
+SDR Scraper
 from datetime import date, timedelta
 import requests
 import io
@@ -187,6 +188,7 @@ if __name__ == "__main__":
     ice_nymex_option = ice_HH(ice_swap, ice_option)
 
 ############################################################################
+email script
 ### simple script to pull daily forecast data from wsi to be emailed to natural gas traders (dane c, tom w, mike d, mike c)
 ### uses wsi api (tom w login) to request 6-10, 11-15 forecast commentary and degree day (gas h or pop c based on season) tables (wsi, gfs ens, eur ens, gfs op)
 ### stores forecast commentary as string, manually convert to html. DD tables stored in dataframe and converted to html
