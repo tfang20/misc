@@ -1,0 +1,50 @@
+Sub ScrapeTablesWithClass()
+    ' Tools needed:
+    ' References to "Microsoft HTML Object Library" and "Microsoft XML, v6.0" must be added
+    ' Go to Tools -> References -> Check the above libraries.
+
+    Dim http As Object
+    Dim html As Object
+    Dim tableElements As Object
+    Dim table As Object
+    Dim tableClass As String
+    Dim i As Integer
+    
+    ' Set the target URL and the table class you are looking for
+    Dim url As String
+    url = "https://example.com" ' Replace with your target URL
+    tableClass = "your-table-class" ' Replace with the class of the table you are targeting
+    
+    ' Create a new XMLHTTP object to make the request
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    
+    ' Make the request to the website
+    http.Open "GET", url, False
+    http.send
+    
+    ' Create a new HTML Document object
+    Set html = CreateObject("HTMLFILE")
+    
+    ' Load the response HTML into the HTMLDocument object
+    html.body.innerHTML = http.responseText
+    
+    ' Get all table elements
+    Set tableElements = html.getElementsByTagName("table")
+    
+    ' Loop through all table elements and check if they match the class
+    i = 1
+    For Each table In tableElements
+        If table.className = tableClass Then
+            Debug.Print "Table " & i & ":"
+            Debug.Print table.outerHTML ' Display table HTML (for example purposes)
+            i = i + 1
+        End If
+    Next table
+    
+    ' Clean up objects
+    Set tableElements = Nothing
+    Set html = Nothing
+    Set http = Nothing
+    
+    MsgBox "Scraping Complete!"
+End Sub
