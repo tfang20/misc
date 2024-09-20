@@ -1,4 +1,38 @@
 import openpyxl
+import xlwings as xw
+
+# Load the workbook using openpyxl
+excel_file = "your_excel_file.xlsx"
+wb = openpyxl.load_workbook(excel_file)
+
+# Access Worksheet 1
+ws1 = wb["Worksheet1"]
+ws1["F2"] = "New Value"  # Change value of F2
+
+# Save changes made with openpyxl
+wb.save(excel_file)
+
+# Now use xlwings to handle data refresh and calculation
+app = xw.App(visible=False)  # Run in the background
+wb_xw = app.books.open(excel_file)
+
+# Access Worksheet 1
+ws1_xw = wb_xw.sheets["Worksheet1"]
+ws1_xw.api.RefreshAll()  # Refresh only Worksheet 1 data connections
+ws1_xw.api.Calculate()   # Calculate Worksheet 1
+
+# Access Worksheet 2
+ws2_xw = wb_xw.sheets["Worksheet2"]
+ws2_xw.api.RefreshAll()  # Refresh only Worksheet 2 data connections
+ws2_xw.api.Calculate()   # Calculate Worksheet 2
+
+# Save and close the workbook
+wb_xw.save()
+wb_xw.close()
+app.quit()
+
+
+import openpyxl
 import win32com.client as win32
 
 # Step 1: Load the Excel file and modify the cell F2 in Worksheet 1
