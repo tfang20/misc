@@ -1,4 +1,53 @@
 import openpyxl
+import win32com.client as win32
+
+# Step 1: Open the Excel file and modify the specific cell
+def modify_excel_cell(file_path, sheet_name, cell_ref, new_value):
+    # Load the workbook and sheet
+    workbook = openpyxl.load_workbook(file_path)
+    sheet = workbook[sheet_name]
+    
+    # Modify the cell value
+    sheet[cell_ref] = new_value
+    
+    # Save the changes
+    workbook.save(file_path)
+    workbook.close()
+
+# Step 2: Refresh entire workbook with Bloomberg macro and recalculate sheets
+def refresh_and_calculate(file_path):
+    # Launch Excel and open the workbook
+    excel_app = win32.Dispatch("Excel.Application")
+    excel_app.Visible = False  # Keep Excel hidden in the background
+    workbook = excel_app.Workbooks.Open(file_path)
+    
+    # Refresh the entire workbook (using the Bloomberg macro)
+    excel_app.Run("RefreshEntireWorkbook")
+    
+    # Recalculate every sheet
+    workbook.RefreshAll()  # Refresh data connections
+    workbook.CalculateFull()  # Calculate all worksheets
+    
+    # Save and close the workbook
+    workbook.Save()
+    workbook.Close(False)
+    excel_app.Quit()
+
+# Example usage
+file_path = "your_file.xlsx"
+sheet_name = "Sheet1"
+cell_ref = "A1"
+new_value = "New Value"
+
+# Modify the cell
+modify_excel_cell(file_path, sheet_name, cell_ref, new_value)
+
+# Refresh and calculate the entire workbook
+refresh_and_calculate(file_path)
+
+--
+
+import openpyxl
 import xlwings as xw
 
 # Load the workbook using openpyxl
