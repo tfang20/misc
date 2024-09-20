@@ -1,3 +1,33 @@
+import xlwings as xw
+
+# Open the Excel workbook
+wb = xw.Book('your_file.xlsm')
+
+# Access a specific sheet (by name or index)
+sheet = wb.sheets['Sheet1']
+
+# Modify the value of a specific cell (for example, A1)
+sheet.range('A1').value = 'New Value'
+
+# Refresh Bloomberg data by recalculating all Bloomberg formulas (equivalent to Ctrl + Alt + F9)
+wb.app.api.Application.Run("blpRefreshAll")  # Calls Bloomberg refresh if Bloomberg API is loaded
+
+# Alternatively, use Ctrl + Alt + F9 to fully recalculate all formulas, including Bloomberg
+wb.app.api.SendKeys("^%{F9}")  # Ctrl + Alt + F9 for a full recalculation
+
+# Trigger recalculation of all formulas in the workbook
+wb.app.calculate()
+
+# Save the workbook
+wb.save()
+
+# Close the workbook and quit the app
+wb.close()
+wb.app.quit()
+
+
+
+
 import openpyxl
 import win32com.client as win32
 
