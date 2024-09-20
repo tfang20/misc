@@ -1,3 +1,47 @@
+import openpyxl
+import win32com.client as win32
+
+# Step 1: Load the Excel file and modify the cell F2 in Worksheet 1
+file_path = "path_to_your_excel_file.xlsx"
+
+# Load the workbook using openpyxl
+wb = openpyxl.load_workbook(file_path)
+
+# Access the first worksheet (Worksheet 1)
+ws1 = wb['Worksheet1']
+
+# Modify cell F2
+ws1['F2'] = 'new_value'  # replace 'new_value' with what you want
+
+# Save the workbook after modification
+wb.save(file_path)
+
+# Step 2: Refresh data and calculate Worksheet 1 and Worksheet 2 using pywin32
+# Create Excel application object
+excel = win32.Dispatch('Excel.Application')
+
+# Open the workbook using Excel Application
+wb_excel = excel.Workbooks.Open(file_path)
+
+# Refresh all data connections
+wb_excel.RefreshAll()
+
+# Calculate Worksheet 1
+ws1_excel = wb_excel.Sheets('Worksheet1')
+ws1_excel.Calculate()
+
+# Calculate Worksheet 2
+ws2_excel = wb_excel.Sheets('Worksheet2')
+ws2_excel.Calculate()
+
+# Save and close the workbook
+wb_excel.Save()
+wb_excel.Close()
+
+# Quit the Excel application
+excel.Quit()
+
+
 Sub ScrapeTablesWithClass()
     ' Tools needed:
     ' References to "Microsoft HTML Object Library" and "Microsoft XML, v6.0" must be added
