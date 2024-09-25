@@ -1,3 +1,45 @@
+import os
+from PyPDF2 import PdfReader, PdfWriter
+
+# Path to the folder containing the PDFs
+folder_path = 'path/to/your/pdf/folder'
+output_pdf = 'filtered_merged_output.pdf'  # Name of the output merged PDF
+
+# Create a PDF writer object to hold the merged content
+writer = PdfWriter()
+
+# Iterate over all files in the folder
+for filename in os.listdir(folder_path):
+    if filename.endswith('.pdf'):
+        pdf_path = os.path.join(folder_path, filename)
+        
+        # Open each PDF file
+        with open(pdf_path, 'rb') as pdf_file:
+            reader = PdfReader(pdf_file)
+            num_pages = len(reader.pages)
+
+            # Logic for multi-page and single-page PDFs
+            if num_pages > 1:
+                # Iterate through each page and check for the text "term"
+                for page_num in range(num_pages):
+                    page = reader.pages[page_num]
+                    page_text = page.extract_text()
+
+                    # Include the page if it contains the word "term"
+                    if "term" in page_text.lower():  # Case-insensitive search
+                        writer.add_page(page)
+            else:
+                # If only one page, add it directly
+                writer.add_page(reader.pages[0])
+
+# Write the merged PDF to an output file
+with open(output_pdf, 'wb') as output_file:
+    writer.write(output_file)
+
+print(f'Filtered merged PDF saved as {output_pdf}')
+
+------
+
 import xlwings as xw
 
 # Open the Excel workbook
