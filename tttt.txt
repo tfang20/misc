@@ -1,3 +1,37 @@
+import pandas as pd
+
+# Example DataFrame
+data = {'AccountID': [1, 2, 3, 4],
+        'Volume': [300000, 350000, 650000, 400000]}
+df = pd.DataFrame(data)
+
+# Step 1: Calculate the sum (Grand Total) for numeric columns
+grand_total = df.sum(numeric_only=True)
+
+# Step 2: Convert the grand total into a row and append it
+grand_total_row = pd.DataFrame(grand_total).T
+grand_total_row['AccountID'] = 'Grand Total'
+
+# Append the grand total row to the DataFrame
+df_with_total = pd.concat([df, grand_total_row], ignore_index=True)
+
+# Step 3: Add a column for the percentage each account represents of the total
+total_volume = grand_total['Volume']
+df_with_total['% of Total'] = (df_with_total['Volume'] / total_volume) * 100
+
+# Step 4: Calculate percentage of total for each column and append it as a new row
+percentage_row = (df_with_total.iloc[:-1, 1:] / total_volume) * 100  # Skip the Grand Total row to avoid division by itself
+percentage_row = percentage_row.sum().to_frame().T  # Sum up for the entire row
+percentage_row['AccountID'] = '% of Grand Total'
+
+# Append the percentage row
+df_final = pd.concat([df_with_total, percentage_row], ignore_index=True)
+
+# Display the final DataFrame
+print(df_final)
+---
+
+
 import os
 from PyPDF2 import PdfReader, PdfWriter
 
