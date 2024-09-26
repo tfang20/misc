@@ -1,3 +1,32 @@
+from openpyxl import load_workbook
+from openpyxl.styles import Font, Alignment, Border, Side
+
+# Specify the Excel file name and sheet name
+file_name = 'your_file.xlsx'
+sheet_name = 'NewSheet'
+
+# Load the existing workbook
+workbook = load_workbook(file_name)
+sheet = workbook[sheet_name]
+
+# Define the border style
+thin_border = Border(left=Side(style='thin'),
+                     right=Side(style='thin'),
+                     top=Side(style='thin'),
+                     bottom=Side(style='thin'))
+
+# Center and add borders to every cell
+for row in sheet.iter_rows():
+    for cell in row:
+        # Center the cell content
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        # Add border to the cell
+        cell.border = thin_border
+
+# Save the workbook
+workbook.save(file_name)
+
+
 import pandas as pd
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
