@@ -1,6 +1,73 @@
 import pandas as pd
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Font, PatternFill
+
+# Example DataFrame
+data = {
+    'Column1': [1, 2, 3],
+    'Column2': ['A', 'B', 'C'],
+    'Column3': [10, 20, 30],
+    'Column4': ['X', 'Y', 'Z']
+}
+df = pd.DataFrame(data)
+
+# Specify the Excel file name and sheet name
+file_name = 'your_file.xlsx'
+sheet_name = 'NewSheet'
+
+# Load an existing workbook or create a new one
+try:
+    workbook = load_workbook(file_name)
+except FileNotFoundError:
+    workbook = Workbook()
+
+# Check if the sheet already exists and delete it if it does
+if sheet_name in workbook.sheetnames:
+    std = workbook[sheet_name]
+    workbook.remove(std)
+
+# Create a new sheet
+sheet = workbook.create_sheet(title=sheet_name)
+
+# Append the DataFrame to the new sheet starting from cell A1
+for r in dataframe_to_rows(df, index=False, header=True):
+    sheet.append(r)
+
+# Formatting
+header_font = Font(bold=True)
+highlight_fill = PatternFill(start_color='ADD8E6', end_color='ADD8E6', fill_type='solid')  # Light blue fill
+
+# Apply header formatting
+for cell in sheet[1]:  # Assuming headers are in the first row
+    cell.font = header_font
+    cell.fill = highlight_fill
+
+# Highlight the last column
+last_column = sheet.max_column
+for row in sheet.iter_rows(min_row=1, max_row=sheet.max_row):
+    row[last_column - 1].fill = highlight_fill  # Adjusting for zero-based index
+
+# Highlight the second-to-last column and make it bold
+second_to_last_column = last_column - 1
+header_cell = sheet.cell(row=1, column=second_to_last_column)
+header_cell.font = Font(bold=True)  # Bold the header of the second-to-last column
+
+for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row):  # Skip header row
+    row[second_to_last_column - 1].font = Font(bold=True)  # Bold the second-to-last column cells
+
+# Highlight the last row
+last_row = sheet.max_row
+for cell in sheet[last_row]:
+    cell.fill = highlight_fill
+
+# Save the workbook
+workbook.save(file_name)
+
+
+import pandas as pd
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 # Example DataFrame
 data = {
