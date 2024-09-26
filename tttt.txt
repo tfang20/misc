@@ -1,3 +1,41 @@
+import pandas as pd
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+
+# Example DataFrame
+data = {
+    'Column1': [1, 2, 3],
+    'Column2': ['A', 'B', 'C']
+}
+df = pd.DataFrame(data)
+
+# Specify the Excel file name and sheet name
+file_name = 'your_file.xlsx'
+sheet_name = 'NewSheet'
+
+# Load an existing workbook or create a new one
+try:
+    workbook = load_workbook(file_name)
+except FileNotFoundError:
+    workbook = Workbook()
+
+# Check if the sheet already exists and delete it if it does
+if sheet_name in workbook.sheetnames:
+    std = workbook[sheet_name]
+    workbook.remove(std)
+
+# Create a new sheet
+sheet = workbook.create_sheet(title=sheet_name)
+
+# Append the DataFrame to the new sheet starting from cell A1
+for r in dataframe_to_rows(df, index=False, header=True):
+    sheet.append(r)
+
+# Save the workbook
+workbook.save(file_name)
+--
+
+
 # Calculate the grand total for each volume type
 grand_total_volume_type1 = df['VolumeType1'].sum()
 grand_total_volume_type2 = df['VolumeType2'].sum()
