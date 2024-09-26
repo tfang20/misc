@@ -1,3 +1,21 @@
+# Calculate the grand total for each volume type
+grand_total_volume_type1 = df['VolumeType1'].sum()
+grand_total_volume_type2 = df['VolumeType2'].sum()
+grand_total_combined = grand_total_volume_type1 + grand_total_volume_type2
+
+# Create a % of Grand Total row
+percentage_row = pd.DataFrame({
+    'AccountID': ['% of Grand Total'],
+    'VolumeType1': [grand_total_volume_type1 / grand_total_combined * 100],
+    'VolumeType2': [grand_total_volume_type2 / grand_total_combined * 100],
+    'TotalVolume': [100],  # Total is always 100% for the % row
+    '% of Grand Total': [100]  # This indicates the overall percentage
+})
+
+# Append the percentage row to the DataFrame
+df_final = pd.concat([df, percentage_row], ignore_index=True)
+
+
 import pandas as pd
 
 # Example DataFrame with two volume columns
