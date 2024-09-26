@@ -1,5 +1,39 @@
 import pandas as pd
 
+# Example DataFrame with two volume columns
+data = {'AccountID': [1, 2, 3, 4],
+        'VolumeType1': [300000, 350000, 650000, 400000],
+        'VolumeType2': [100000, 200000, 300000, 150000]}
+
+df = pd.DataFrame(data)
+
+# Step 1: Calculate the sum (Grand Total) for both volume columns combined
+df['TotalVolume'] = df['VolumeType1'] + df['VolumeType2']
+
+# Step 2: Calculate the grand total for the combined volume
+grand_total_volume = df['TotalVolume'].sum()
+
+# Step 3: Add a column for the percentage each account represents of the grand total
+df['% of Grand Total'] = (df['TotalVolume'] / grand_total_volume) * 100
+
+# Step 4: Create a "Grand Total" row
+grand_total_row = pd.DataFrame({
+    'AccountID': ['Grand Total'],
+    'VolumeType1': [df['VolumeType1'].sum()],
+    'VolumeType2': [df['VolumeType2'].sum()],
+    'TotalVolume': [grand_total_volume],
+    '% of Grand Total': [100]  # The Grand Total row should always be 100%
+})
+
+# Step 5: Append the Grand Total row to the DataFrame
+df_final = pd.concat([df, grand_total_row], ignore_index=True)
+
+# Display the final DataFrame
+print(df_final)
+---
+
+import pandas as pd
+
 # Example DataFrame
 data = {'AccountID': [1, 2, 3, 4],
         'Volume': [300000, 350000, 650000, 400000]}
