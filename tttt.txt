@@ -1,3 +1,30 @@
+Sub FastCopyUsedRange()
+    Dim sourceSheet As Worksheet
+    Dim destinationSheet As Worksheet
+    Dim dataArray As Variant
+    Dim sourceRange As Range
+    Dim destinationRange As Range
+
+    ' Set your source and destination sheets
+    Set sourceSheet = ThisWorkbook.Sheets("SourceSheetName") ' Replace with your source sheet name
+    Set destinationSheet = ThisWorkbook.Sheets("DestinationSheetName") ' Replace with your destination sheet name
+
+    ' Use UsedRange to define the range of the source sheet
+    Set sourceRange = sourceSheet.UsedRange
+
+    ' Load the data into an array
+    dataArray = sourceRange.Value
+
+    ' Define the destination range with the same size as the source UsedRange
+    Set destinationRange = destinationSheet.Range(destinationSheet.Cells(1, 1), _
+        destinationSheet.Cells(sourceRange.Rows.Count, sourceRange.Columns.Count))
+
+    ' Copy the array data to the destination range
+    destinationRange.Value = dataArray
+End Sub
+
+
+
 This is a sophisticated structure aimed at capturing the **50bps cut** view while taking advantage of the volatility dynamics around the FOMC meeting on **11/6/2024**. Let’s break it down and evaluate how well it meets your goals of profiting from a **50bps rate cut** while staying hedged and minimizing costs:
 
 ### Structure Breakdown:
