@@ -1,3 +1,45 @@
+import xlwings as xw
+import pandas as pd
+from multiprocessing import Pool
+
+# Function to calculate a single sheet
+def calculate_sheet(sheet_name, file_path="path_to_your_file.xlsx"):
+    # Open Excel workbook
+    wb = xw.Book(file_path)
+    
+    # Get the specific sheet
+    sheet = wb.sheets[sheet_name]
+    
+    # Calculate the sheet
+    sheet.calculate()
+    
+    # Optionally, read the data back into a DataFrame
+    data = sheet.range("A1:B10").options(pd.DataFrame, header=1, index=False).value
+    
+    # Close workbook
+    wb.close()
+    
+    print(f"Calculation done for {sheet_name}")
+    return data
+
+# Function to calculate multiple sheets using a process pool
+def calculate_multiple_sheets_in_parallel(sheet_names, file_path="path_to_your_file.xlsx", num_processes=4):
+    # Use a process pool to limit the number of parallel processes
+    with Pool(processes=num_processes) as pool:
+        # Each sheet calculation runs in a separate process
+        pool.starmap(calculate_sheet, [(sheet, file_path) for sheet in sheet_names])
+
+# List of sheet names to calculate
+sheet_names = ["Sheet1", "Sheet2", "Sheet3"]
+
+# Run the calculation in parallel
+if __name__ == "__main__":
+    calculate_multiple_sheets_in_parallel(sheet_names)
+-----------
+
+
+
+
 import time
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
