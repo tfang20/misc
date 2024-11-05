@@ -1,5 +1,50 @@
 import xlwings as xw
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Function to perform calculations on a single sheet
+def calculate_sheet(sheet):
+    sheet.api.Calculate()  # Perform calculation on the sheet
+    return f"Calculated sheet: {sheet.name}"
+
+# Main function to process sheets in increments of 4
+def concurrent_calculations(sheets):
+    results = []
+    
+    # Process sheets in chunks of 4
+    for i in range(0, len(sheets), 4):
+        # Get the next batch of 4 sheets (or less if fewer remain)
+        batch = sheets[i:i+4]
+        
+        # Use ThreadPoolExecutor to manage concurrent calculations for each batch
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # Submit tasks for each sheet in the batch
+            future_to_sheet = {executor.submit(calculate_sheet, sheet): sheet for sheet in batch}
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_sheet):
+                sheet = future_to_sheet[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                    print(result)
+                except Exception as exc:
+                    print(f"{sheet.name} generated an exception: {exc}")
+
+    return results
+
+# Assuming we have a workbook and an array of Sheet objects
+if __name__ == "__main__":
+    # Open your workbook
+    wb = xw.Book('your_workbook.xlsx')
+    sheets = wb.sheets  # This gets all sheets in the workbook as Sheet objects
+    
+    # Call the concurrent calculation function
+    concurrent_calculations(sheets)
+
+
+-----
+import xlwings as xw
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 # Function to perform calculations on a single sheet
