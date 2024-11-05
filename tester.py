@@ -1,4 +1,57 @@
 import xlwings as xw
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+
+# Function to perform calculations on a single sheet
+def calculate_sheet(sheet_name, workbook):
+    sheet = workbook.sheets[sheet_name]
+    sheet.api.Calculate()
+    return f"Calculated sheet: {sheet_name}"
+
+# Main function to process sheets in increments of 4
+def concurrent_calculations(sheet_names, workbook_path):
+    # Open the Excel workbook
+    wb = xw.Book(workbook_path)
+
+    results = []
+    # Process sheets in chunks of 4
+    for i in range(0, len(sheet_names), 4):
+        # Get the next batch of 4 sheets (or less if fewer remain)
+        batch = sheet_names[i:i+4]
+        
+        # Use ThreadPoolExecutor to manage concurrent calculations for each batch
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # Submit tasks for each sheet in the batch
+            future_to_sheet = {executor.submit(calculate_sheet, sheet, wb): sheet for sheet in batch}
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_sheet):
+                sheet_name = future_to_sheet[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                    print(result)
+                except Exception as exc:
+                    print(f"{sheet_name} generated an exception: {exc}")
+
+    # Close the workbook if needed
+    # wb.close()
+
+    return results
+
+# List of sheet names
+sheet_names = [f"Sheet{i+1}" for i in range(33)]  # Example sheet names "Sheet1" to "Sheet33"
+
+# Execute concurrent calculations in increments of 4
+if __name__ == "__main__":
+    workbook_path = 'your_workbook.xlsx'  # Replace with your actual workbook path
+    concurrent_calculations(sheet_names, workbook_path)
+
+
+
+--1---
+
+import xlwings as xw
 import pandas as pd
 from multiprocessing import Pool
 
