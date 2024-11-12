@@ -1,3 +1,77 @@
+Sub SendEmailWithChartsInBody()
+    Dim OutlookApp As Object
+    Dim OutlookMail As Object
+    Dim ws As Worksheet
+    Dim chart1Range As Range, chart2Range As Range, chart3Range As Range
+    Dim chart1Image As String, chart2Image As String, chart3Image As String
+
+    ' Set your worksheet and chart ranges
+    Set ws = ThisWorkbook.Sheets("Sheet1")
+    Set chart1Range = ws.Range("A1:D10") ' Adjust ranges to your charts
+    Set chart2Range = ws.Range("E1:H10")
+    Set chart3Range = ws.Range("I1:L10")
+    
+    ' Create temporary chart images as files
+    chart1Image = SaveRangeAsImage(chart1Range, "Chart1.png")
+    chart2Image = SaveRangeAsImage(chart2Range, "Chart2.png")
+    chart3Image = SaveRangeAsImage(chart3Range, "Chart3.png")
+    
+    ' Initialize Outlook application and email
+    Set OutlookApp = CreateObject("Outlook.Application")
+    Set OutlookMail = OutlookApp.CreateItem(0)
+    
+    ' Set email properties
+    With OutlookMail
+        .To = "recipient@example.com"
+        .Subject = "Charts in Email Body"
+        
+        ' Embed images into the HTML body of the email
+        .HTMLBody = "<p>Here are the charts:</p>" & _
+                    "<img src='cid:Chart1'>" & _
+                    "<br><img src='cid:Chart2'>" & _
+                    "<br><img src='cid:Chart3'>" & _
+                    .HTMLBody
+        
+        ' Attach images as inline content
+        .Attachments.Add chart1Image, 1, 0, "Chart1"
+        .Attachments.Add chart2Image, 1, 0, "Chart2"
+        .Attachments.Add chart3Image, 1, 0, "Chart3"
+        
+        ' Send email
+        .Send
+    End With
+    
+    ' Clean up
+    Kill chart1Image
+    Kill chart2Image
+    Kill chart3Image
+    
+    Set OutlookMail = Nothing
+    Set OutlookApp = Nothing
+End Sub
+
+Function SaveRangeAsImage(rng As Range, imgFileName As String) As String
+    Dim tempChart As ChartObject
+    Dim imgFilePath As String
+    
+    ' Define the path to save the image
+    imgFilePath = Environ("Temp") & "\" & imgFileName
+    
+    ' Copy range to a temporary chart
+    Set tempChart = rng.Worksheet.ChartObjects.Add(Left:=rng.Left, Top:=rng.Top, Width:=rng.Width, Height:=rng.Height)
+    tempChart.Chart.SetSourceData rng
+    tempChart.Chart.Export Filename:=imgFilePath, FilterName:="PNG"
+    
+    ' Delete temporary chart
+    tempChart.Delete
+    
+    ' Return image file path
+    SaveRangeAsImage = imgFilePath
+End Function
+-------
+
+
+
 Sub FastCopyUsedRange()
     Dim sourceSheet As Worksheet
     Dim destinationSheet As Worksheet
