@@ -1,3 +1,68 @@
+Sub SendEmailWithRangePictures()
+    Dim OutlookApp As Object
+    Dim OutlookMail As Object
+    Dim RangesArray() As Range
+    Dim i As Integer
+    Dim TempFilePath As String
+    Dim TempFileName As String
+    Dim ImageFile As String
+
+    ' Define the ranges you want to copy (example ranges)
+    Set RangesArray = Array(ThisWorkbook.Sheets("Sheet1").Range("A1:C3"), _
+                            ThisWorkbook.Sheets("Sheet1").Range("E1:G3"))
+
+    ' Create a new instance of Outlook application
+    Set OutlookApp = CreateObject("Outlook.Application")
+    Set OutlookMail = OutlookApp.CreateItem(0)
+
+    ' Temporary file path for storing images
+    TempFilePath = Environ("Temp") & "\"
+
+    ' Loop through each range in the array
+    For i = LBound(RangesArray) To UBound(RangesArray)
+        ' Copy the range as a picture
+        RangesArray(i).CopyPicture Appearance:=xlScreen, Format:=xlPicture
+
+        ' Create a temporary file name for the image
+        TempFileName = "RangeImage" & i & ".png"
+        ImageFile = TempFilePath & TempFileName
+
+        ' Create a new chart to paste the picture
+        Dim ChartObj As ChartObject
+        Set ChartObj = ThisWorkbook.Sheets("Sheet1").ChartObjects.Add(0, 0, RangesArray(i).Width, RangesArray(i).Height)
+        ChartObj.Activate
+        ChartObj.Chart.Paste
+
+        ' Export the chart as a PNG image
+        ChartObj.Chart.Export Filename:=ImageFile, FilterName:="PNG"
+
+        ' Delete the temporary chart
+        ChartObj.Delete
+
+        ' Insert the image into the email body
+        With OutlookMail.HTMLBody
+            .HTMLBody = .HTMLBody & "<br><img src='" & ImageFile & "'><br>"
+        End With
+    Next i
+
+    ' Set email properties
+    With OutlookMail
+        .To = "recipient@example.com"
+        .Subject = "Ranges as Images"
+        .BodyFormat = 2 ' HTML format
+        .Display ' Change to .Send to directly send the email
+    End With
+
+    ' Clean up
+    Set OutlookMail = Nothing
+    Set OutlookApp = Nothing
+
+End Sub
+
+
+
+
+--------
 import xlwings as xw
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
