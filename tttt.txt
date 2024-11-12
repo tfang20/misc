@@ -1,3 +1,79 @@
+Sub SendEmailWithTablesInBody()
+    Dim OutlookApp As Object
+    Dim OutlookMail As Object
+    Dim ws As Worksheet
+    Dim table1Range As Range, table2Range As Range, table3Range As Range
+    Dim table1Image As String, table2Image As String, table3Image As String
+
+    ' Set your worksheet and table ranges
+    Set ws = ThisWorkbook.Sheets("Sheet1")
+    Set table1Range = ws.Range("A1:D10") ' Adjust ranges to your tables
+    Set table2Range = ws.Range("E1:H10")
+    Set table3Range = ws.Range("I1:L10")
+    
+    ' Create temporary images of each table range
+    table1Image = SaveRangeAsImage(table1Range, "Table1.png")
+    table2Image = SaveRangeAsImage(table2Range, "Table2.png")
+    table3Image = SaveRangeAsImage(table3Range, "Table3.png")
+    
+    ' Initialize Outlook application and email
+    Set OutlookApp = CreateObject("Outlook.Application")
+    Set OutlookMail = OutlookApp.CreateItem(0)
+    
+    ' Set email properties
+    With OutlookMail
+        .To = "recipient@example.com"
+        .Subject = "Tables in Email Body"
+        
+        ' Embed images into the HTML body of the email
+        .HTMLBody = "<p>Here are the tables:</p>" & _
+                    "<img src='cid:Table1'>" & _
+                    "<br><img src='cid:Table2'>" & _
+                    "<br><img src='cid:Table3'>" & _
+                    .HTMLBody
+        
+        ' Attach images as inline content
+        .Attachments.Add table1Image, 1, 0, "Table1"
+        .Attachments.Add table2Image, 1, 0, "Table2"
+        .Attachments.Add table3Image, 1, 0, "Table3"
+        
+        ' Send email
+        .Send
+    End With
+    
+    ' Clean up
+    Kill table1Image
+    Kill table2Image
+    Kill table3Image
+    
+    Set OutlookMail = Nothing
+    Set OutlookApp = Nothing
+End Sub
+
+Function SaveRangeAsImage(rng As Range, imgFileName As String) As String
+    Dim imgFilePath As String
+    Dim cht As ChartObject
+
+    ' Define the path to save the image
+    imgFilePath = Environ("Temp") & "\" & imgFileName
+    
+    ' Copy range as picture
+    rng.CopyPicture Appearance:=xlScreen, Format:=xlPicture
+    
+    ' Create a temporary chart to hold the picture
+    Set cht = rng.Worksheet.ChartObjects.Add(Left:=rng.Left, Top:=rng.Top, Width:=rng.Width, Height:=rng.Height)
+    cht.Chart.Paste
+    cht.Chart.Export Filename:=imgFilePath, FilterName:="PNG"
+    
+    ' Delete temporary chart
+    cht.Delete
+    
+    ' Return image file path
+    SaveRangeAsImage = imgFilePath
+End Function
+
+
+
 Sub SendEmailWithChartsInBody()
     Dim OutlookApp As Object
     Dim OutlookMail As Object
