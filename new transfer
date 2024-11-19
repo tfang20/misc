@@ -1,0 +1,32 @@
+Function GetUniqueValues(ColumnRange As Range) As Variant
+    Dim Dict As Object
+    Dim Cell As Range
+    Dim UniqueValues() As Variant
+    Dim i As Long
+    
+    ' Create a dictionary to store unique values
+    Set Dict = CreateObject("Scripting.Dictionary")
+    
+    ' Loop through each cell in the column range
+    For Each Cell In ColumnRange
+        If Not IsEmpty(Cell.Value) Then
+            ' Add value to dictionary if it doesn't already exist
+            If Not Dict.exists(Cell.Value) Then
+                Dict.Add Cell.Value, Nothing
+            End If
+        End If
+    Next Cell
+    
+    ' Resize array to the number of unique values
+    ReDim UniqueValues(1 To Dict.Count)
+    
+    ' Populate array with unique values from dictionary
+    i = 1
+    For Each Key In Dict.Keys
+        UniqueValues(i) = Key
+        i = i + 1
+    Next Key
+    
+    ' Return the array
+    GetUniqueValues = UniqueValues
+End Function
