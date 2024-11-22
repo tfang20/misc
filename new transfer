@@ -1,3 +1,15 @@
+A secretive society has 4 towers, each with a certain number of floors.
+The number of floors in each tower is the smallest prime number greater than the square of the tower’s position (e.g., Tower 1, Tower 2...).
+
+On each floor of a tower, there are 5 rooms.
+Each room contains a magical orb, and each orb holds a number of gems equal to twice the floor number on which it resides.
+
+The society collects all the gems from every tower, combines them, and divides the total by the number of towers.
+
+Finally, they subtract the sum of the first two odd Fibonacci numbers and divide the result by the number of towers again.
+
+What is the final result?
+
 Function GetUniqueValues(ColumnRange As Range) As Variant
     Dim Dict As Object
     Dim Cell As Range
