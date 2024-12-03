@@ -1,3 +1,46 @@
+Sub CopyRangeAsPictureToEmail()
+    Dim ws As Worksheet
+    Dim rng As Range
+    Dim outlookApp As Object
+    Dim outlookMail As Object
+    Dim clipboardData As Object
+    
+    ' Set the worksheet and range to copy
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Replace with your sheet name
+    Set rng = ws.Range("A1:D10")           ' Replace with your range
+
+    ' Copy the range as a picture
+    rng.CopyPicture Appearance:=xlScreen, Format:=xlPicture
+
+    ' Use the clipboard to access the copied image
+    Set clipboardData = CreateObject("HTMLfile")
+    clipboardData.ParentWindow.ClipboardData.GetData "Bitmap"
+
+    ' Create Outlook application and email
+    Set outlookApp = CreateObject("Outlook.Application")
+    Set outlookMail = outlookApp.CreateItem(0) ' 0 = olMailItem
+
+    ' Compose the email
+    With outlookMail
+        .To = "recipient@example.com" ' Replace with the recipient's email address
+        .Subject = "Range Picture in Email"
+        .BodyFormat = 2 ' 2 = olFormatHTML
+        .HTMLBody = "<html><body>" & clipboardData & "</body></html>"
+
+        ' Display the email for review or send directly
+        .Display ' Use .Send to send the email directly
+    End With
+
+    ' Clean up objects
+    Set clipboardData = Nothing
+    Set outlookMail = Nothing
+    Set outlookApp = Nothing
+End Sub
+
+
+
+
+
 Sub SendEmailWithRangePictures()
     Dim OutlookApp As Object
     Dim OutlookMail As Object
