@@ -1,3 +1,92 @@
+Let's write the allocation formulas for the buckets you provided, using the **bilinear interpolation method**. We'll compute the contribution of any grid point \( R_{ij} \) (expiry \( i \), tenor \( j \)) to each bucket. 
+
+Here are the buckets: 
+- \( 3m2y \), \( 3m5y \), \( 3m10y \), \( 3m30y \)
+- \( 1y2y \), \( 1y5y \), \( 1y10y \), \( 1y30y \)
+- \( 3y2y \), \( 3y5y \), \( 3y10y \), \( 3y30y \)
+- \( 5y2y \), \( 5y5y \), \( 5y10y \), \( 5y30y \)
+- \( 10y2y \), \( 10y5y \), \( 10y10y \), \( 10y30y \)
+- \( 15y2y \), \( 15y5y \), \( 15y10y \), \( 15y30y \)
+
+### **Step 1: Bilinear Interpolation Formula**
+For any grid point \( R_{ij} \), the contribution to a bucket \( B(E_k, T_m) \) (where \( E_k \) is expiry and \( T_m \) is tenor) is:
+
+\[
+\text{Risk to } B(E_k, T_m) = R_{ij} \cdot w_{E_k} \cdot w_{T_m}
+\]
+
+Where:
+- \( w_{E_k} = \frac{E_{k+1} - E_i}{E_{k+1} - E_k} \) if \( E_k \leq E_i \leq E_{k+1} \), or 0 otherwise.
+- \( w_{T_m} = \frac{T_{m+1} - T_j}{T_{m+1} - T_m} \) if \( T_m \leq T_j \leq T_{m+1} \), or 0 otherwise.
+
+This is repeated for the contributions to the four nearest buckets surrounding \( R_{ij} \): \( B(E_k, T_m) \), \( B(E_k, T_{m+1}) \), \( B(E_{k+1}, T_m) \), and \( B(E_{k+1}, T_{m+1}) \).
+
+---
+
+### **Step 2: Bucket Allocations**
+For simplicity, I’ll write the generic formulas for allocating risk to **each specific bucket**, assuming the grid includes all necessary expiry and tenor points.
+
+#### Bucket \( B(3m2y) \):
+\[
+\text{Risk to } B(3m2y) = R_{ij} \cdot w_{E_{3m}} \cdot w_{T_{2y}}
+\]
+Where:
+\[
+w_{E_{3m}} = \frac{1y - E_i}{1y - 3m}, \quad w_{T_{2y}} = \frac{5y - T_j}{5y - 2y}
+\]
+
+#### Bucket \( B(3m5y) \):
+\[
+\text{Risk to } B(3m5y) = R_{ij} \cdot w_{E_{3m}} \cdot w_{T_{5y}}
+\]
+Where:
+\[
+w_{E_{3m}} = \frac{1y - E_i}{1y - 3m}, \quad w_{T_{5y}} = \frac{10y - T_j}{10y - 5y}
+\]
+
+#### Bucket \( B(3m10y) \):
+\[
+\text{Risk to } B(3m10y) = R_{ij} \cdot w_{E_{3m}} \cdot w_{T_{10y}}
+\]
+Where:
+\[
+w_{E_{3m}} = \frac{1y - E_i}{1y - 3m}, \quad w_{T_{10y}} = \frac{30y - T_j}{30y - 10y}
+\]
+
+#### Bucket \( B(3m30y) \):
+\[
+\text{Risk to } B(3m30y) = R_{ij} \cdot w_{E_{3m}} \cdot w_{T_{30y}}
+\]
+Where:
+\[
+w_{E_{3m}} = \frac{1y - E_i}{1y - 3m}, \quad w_{T_{30y}} = 1 \quad \text{(if \( T_j = 30y \))}
+\]
+
+---
+
+### **Generic Formula for All Buckets**
+For bucket \( B(E_k, T_m) \):
+\[
+\text{Risk to } B(E_k, T_m) = R_{ij} \cdot w_{E_k} \cdot w_{T_m}
+\]
+
+Where:
+- \( w_{E_k} \): Weight for expiry based on proximity to \( E_k \) and \( E_{k+1} \).
+- \( w_{T_m} \): Weight for tenor based on proximity to \( T_m \) and \( T_{m+1} \).
+
+---
+
+### **Practical Consideration**
+For each bucket:
+1. Calculate \( w_{E_k} \) and \( w_{T_m} \) based on expiry and tenor proximity.
+2. Sum all contributions from nearby grid points \( R_{ij} \) to the bucket.
+
+You can implement this efficiently in Python or Excel by iterating through the risk matrix and assigning weights based on the grid structure.
+
+
+
+...........
+
 To reduce your full risk matrix into the desired buckets based on the interpolative logic you described, you can use a **weighted allocation** approach. Here's a step-by-step explanation of how to construct the formulas:
 
 ---
