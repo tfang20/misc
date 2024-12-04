@@ -1,3 +1,85 @@
+To reduce your full risk matrix into the desired buckets based on the interpolative logic you described, you can use a **weighted allocation** approach. Here's a step-by-step explanation of how to construct the formulas:
+
+---
+
+### **Step 1: Define Your Buckets and Logic**
+Your target buckets are based on specific expiry and tenor combinations, such as `3m2y`, `1y10y`, and so on.
+
+For any cell in the matrix (e.g., `6m2y`), the risk needs to be allocated proportionally to the surrounding buckets. This proportionality is determined by:
+1. **Expiry distance weights** (e.g., how close `6m` is to `3m` and `1y`).
+2. **Tenor distance weights** (e.g., how close `2y` is to `2y`, `5y`, etc., in the bucket).
+
+---
+
+### **Step 2: General Formula for Allocation**
+For a given matrix entry \( R_{ij} \) (where \( i \) is the expiry and \( j \) is the tenor):
+1. Identify the **two nearest expiry buckets** \( E_k \) and \( E_{k+1} \).
+2. Identify the **two nearest tenor buckets** \( T_m \) and \( T_{m+1} \).
+3. Allocate the risk \( R_{ij} \) to the four surrounding buckets using bilinear interpolation weights.
+
+The allocation formula is:
+
+\[
+W_{km} = w_{E_k} \cdot w_{T_m} \cdot R_{ij}
+\]
+\[
+W_{km+1} = w_{E_k} \cdot w_{T_{m+1}} \cdot R_{ij}
+\]
+\[
+W_{k+1,m} = w_{E_{k+1}} \cdot w_{T_m} \cdot R_{ij}
+\]
+\[
+W_{k+1,m+1} = w_{E_{k+1}} \cdot w_{T_{m+1}} \cdot R_{ij}
+\]
+
+Where:
+- \( W_{km}, W_{km+1}, W_{k+1,m}, W_{k+1,m+1} \) are the weights allocated to the corresponding buckets.
+- \( w_{E_k}, w_{E_{k+1}}, w_{T_m}, w_{T_{m+1}} \) are the **normalized weights** for expiry and tenor based on the distances:
+    \[
+    w_{E_k} = \frac{E_{k+1} - E_i}{E_{k+1} - E_k}, \quad w_{E_{k+1}} = \frac{E_i - E_k}{E_{k+1} - E_k}
+    \]
+    \[
+    w_{T_m} = \frac{T_{m+1} - T_j}{T_{m+1} - T_m}, \quad w_{T_{m+1}} = \frac{T_j - T_m}{T_{m+1} - T_m}
+    \]
+
+Here, \( E_i \) and \( T_j \) are the expiry and tenor of the risk cell \( R_{ij} \).
+
+---
+
+### **Step 3: Implementation Workflow**
+1. **Input the Expiry and Tenor Grid**: Convert your expiry and tenor rows/columns into numerical values (e.g., `14d = 0.038`, `1m = 0.083`, `3m = 0.25`, `1y = 1`, etc.).
+2. **Map Each Cell to Buckets**: For each \( R_{ij} \), identify the nearest two expiry buckets \( E_k, E_{k+1} \) and tenor buckets \( T_m, T_{m+1} \).
+3. **Apply Weighting Formula**: Use the weights to allocate the risk into the corresponding buckets.
+
+---
+
+### **Example for 6m2y**
+Assume:
+- Expiry grid: \( [3m, 1y] \), so \( E_k = 3m, E_{k+1} = 1y \).
+- Tenor grid: \( [2y, 5y] \), so \( T_m = 2y, T_{m+1} = 5y \).
+
+For expiry:
+\[
+w_{E_k} = \frac{1 - 0.5}{1 - 0.25} = 0.666, \quad w_{E_{k+1}} = 1 - 0.666 = 0.334
+\]
+
+For tenor:
+\[
+w_{T_m} = 1, \quad w_{T_{m+1}} = 0 \quad (\text{since 2y aligns perfectly with 2y bucket}).
+\]
+
+Allocation:
+\[
+W_{km} = 0.666 \cdot 1 \cdot R_{ij}, \quad W_{k+1,m} = 0.334 \cdot 1 \cdot R_{ij}
+\]
+
+---
+
+### **Alternative Logic**
+If simplicity is preferred, you could predefine weights for specific regions of the grid (e.g., assign fixed percentages based on heuristics). However, the bilinear interpolation approach is robust, flexible, and respects the relative distances of each cell from the target buckets.
+
+
+
 Sub SendEmailWithTablesInBody()
     Dim OutlookApp As Object
     Dim OutlookMail As Object
