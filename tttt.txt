@@ -5,6 +5,40 @@ def open_excel_files(directory):
     for file in os.listdir(directory):
         if file.endswith(".xlsx") or file.endswith(".xlsm"):
             file_path = os.path.join(directory, file)
+
+            # Create a new Excel instance
+            excel = win32com.client.DispatchEx("Excel.Application")
+            excel.Visible = True  # Show the instance
+
+            try:
+                # Try opening with full access
+                workbook = excel.Workbooks.Open(file_path, UpdateLinks=0, ReadOnly=False)
+                print(f"Opened: {file_path} (ReadOnly=False)")
+            except Exception as e:
+                print(f"File in use: {file_path}, attempting read-only mode.")
+                try:
+                    # Open as Read-Only if already locked
+                    workbook = excel.Workbooks.Open(file_path, UpdateLinks=0, ReadOnly=True)
+                    print(f"Opened: {file_path} (ReadOnly=True)")
+                except Exception as e:
+                    print(f"Failed to open {file_path} in any mode: {e}")
+                    excel.Quit()  # Close the instance if it couldn't open anything
+
+# Specify your directory
+directory_path = r"C:\path\to\your\directory"
+open_excel_files(directory_path)
+
+
+
+
+
+import os
+import win32com.client
+
+def open_excel_files(directory):
+    for file in os.listdir(directory):
+        if file.endswith(".xlsx") or file.endswith(".xlsm"):
+            file_path = os.path.join(directory, file)
             
             # Create a new Excel instance
             excel = win32com.client.DispatchEx("Excel.Application")
