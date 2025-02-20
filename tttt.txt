@@ -1,3 +1,48 @@
+Sub OpenSpecificFiles()
+    Dim filePaths As Variant
+    Dim i As Integer
+    Dim xlApp As Object
+    Dim wb As Object
+    Dim tempFilePath As String
+    
+    ' Define the specific files to open
+    filePaths = Array( _
+        "C:\path\to\file1.xlsx", _
+        "C:\path\to\file2.xlsm", _
+        "C:\path\to\file3.xlsx" _
+    )
+
+    ' Loop through each specified file
+    For i = LBound(filePaths) To UBound(filePaths)
+        ' Create a new Excel instance
+        Set xlApp = CreateObject("Excel.Application")
+        xlApp.Visible = True ' Show the Excel window
+
+        ' Attempt to open file normally
+        On Error Resume Next
+        Set wb = xlApp.Workbooks.Open(filePaths(i), UpdateLinks:=0, ReadOnly:=False)
+
+        ' If file is in use, open a temporary copy in read-only mode
+        If Err.Number <> 0 Then
+            Err.Clear
+            Debug.Print "File in use: " & filePaths(i) & ", opening as read-only copy."
+
+            ' Create a temporary copy
+            tempFilePath = filePaths(i)
+            tempFilePath = Left(tempFilePath, InStrRev(tempFilePath, ".")) & "copy" & Mid(tempFilePath, InStrRev(tempFilePath, "."))
+            FileCopy filePaths(i), tempFilePath
+
+            ' Open the copy in read-only mode
+            Set wb = xlApp.Workbooks.Open(tempFilePath, UpdateLinks:=0, ReadOnly:=True)
+        End If
+
+        ' Print status in Immediate Window (Ctrl+G in VBA Editor to view)
+        Debug.Print "Opened: " & wb.Name & " (ReadOnly=" & wb.ReadOnly & ")"
+    Next i
+End Sub
+
+
+
 import os
 import win32com.client
 
