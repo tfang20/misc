@@ -1,3 +1,60 @@
+import pandas as pd
+
+# Create the empty grid (map) with rows a-g and columns 1-9
+rows = list('abcdefg')
+cols = [str(i) for i in range(1, 10)]
+map_df = pd.DataFrame(0, index=rows, columns=cols)
+
+# Example data with keys
+data = pd.DataFrame({'keys': ['a-1', 'a-1', 'b-2', 'c-3', 'a-1', 'g-2', 'b-2', 'g-2']})
+
+# Count occurrences of each key
+key_counts = data['keys'].value_counts()
+
+# Update the map with the counts
+for key, count in key_counts.items():
+    row, col = key.split('-')
+    if row in map_df.index and col in map_df.columns:
+        map_df.loc[row, col] = count
+
+# Convert the DataFrame to HTML with a customized style
+html_table = map_df.to_html(na_rep='', border=1)
+
+# Add custom CSS to control column width
+html_content = f"""
+<html>
+<head>
+    <style>
+        table {{
+            border-collapse: collapse;
+            width: 70%; /* Overall table width */
+        }}
+        th, td {{
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+            width: 50px; /* Fixed column width */
+        }}
+        th {{
+            background-color: #f2f2f2;
+        }}
+    </style>
+</head>
+<body>
+    <h2>Heatmap Data Table</h2>
+    {html_table}
+</body>
+</html>
+"""
+
+# Save the HTML to a file (optional)
+with open('heatmap_email.html', 'w') as f:
+    f.write(html_content)
+
+# Use `html_content` to embed in your Outlook email
+
+
+
 
 import pandas as pd
 
