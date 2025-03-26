@@ -1,3 +1,27 @@
+
+import pandas as pd
+
+# Create the empty grid (map) with rows a-g and columns 1-9
+rows = list('abcdefg')
+cols = [str(i) for i in range(1, 10)]
+map_df = pd.DataFrame(0, index=rows, columns=cols)
+
+# Example data with keys
+data = pd.DataFrame({'keys': ['a-1', 'a-1', 'b-2', 'c-3', 'a-1', 'g-2', 'b-2', 'g-2']})
+
+# Count occurrences of each key
+key_counts = data['keys'].value_counts()
+
+# Update the map with the counts
+for key, count in key_counts.items():
+    row, col = key.split('-')
+    if row in map_df.index and col in map_df.columns:
+        map_df.loc[row, col] = count
+
+print(map_df)
+
+
+
 Sub OpenSpecificFiles()
     Dim filePaths As Variant
     Dim i As Integer
